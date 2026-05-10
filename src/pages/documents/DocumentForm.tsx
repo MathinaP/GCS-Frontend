@@ -859,7 +859,6 @@ export default function DocumentForm({ type }: Props) {
         <section className="overflow-visible rounded-md border border-gray-200 bg-white shadow-sm">
           <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
             <div>
-              <h2 className="text-sm font-bold text-gray-800">Line Items</h2>
               <p className="text-xs text-gray-500">Add materials, quantity, rate and discount</p>
             </div>
             <button type="button" onClick={addItem} className="flex items-center gap-1.5 rounded-md bg-brand px-3 py-2 text-xs font-semibold text-white hover:bg-brand-dark">
