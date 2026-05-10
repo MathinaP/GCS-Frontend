@@ -366,7 +366,7 @@ function MatSearch({ value, materials, onChange, onSelect, onCreate }: MatSearch
 
   return (
     <div ref={ref} className="relative">
-      <div className="flex min-w-[220px] gap-1 sm:min-w-[260px]">
+      <div className="flex min-w-[260px] gap-1 sm:min-w-[320px]">
         <input
           value={value}
           onChange={e => {
@@ -866,17 +866,17 @@ export default function DocumentForm({ type }: Props) {
             </button>
           </div>
           <div className="overflow-x-auto">
-            <table className="min-w-[760px] border-collapse text-xs">
+            <table className="w-full min-w-[960px] border-collapse text-xs">
               <thead>
                 <tr className="bg-brand text-white">
                   <th className="w-12 border border-brand-dark px-2 py-2 text-center">S.No</th>
-                  <th className="min-w-[180px] border border-brand-dark px-2 py-2 text-left">Description of Goods</th>
-                  <th className="w-20 border border-brand-dark px-2 py-2 text-center">HSN/SAC</th>
-                  <th className="w-16 border border-brand-dark px-2 py-2 text-center">Qty</th>
-                  <th className="w-20 border border-brand-dark px-2 py-2 text-center">Rate (Rs.)</th>
-                  <th className="w-16 border border-brand-dark px-2 py-2 text-center">Per</th>
-                  <th className="w-14 border border-brand-dark px-2 py-2 text-center">Disc.%</th>
-                  <th className="w-24 border border-brand-dark px-2 py-2 text-right">Amount (Rs.)</th>
+                  <th className="min-w-[280px] border border-brand-dark px-2 py-2 text-left">Description of Goods</th>
+                  <th className="w-24 border border-brand-dark px-2 py-2 text-center">HSN/SAC</th>
+                  <th className="w-20 border border-brand-dark px-2 py-2 text-center">Qty</th>
+                  <th className="w-28 border border-brand-dark px-2 py-2 text-center">Rate (Rs.)</th>
+                  <th className="w-20 border border-brand-dark px-2 py-2 text-center">Per</th>
+                  <th className="w-16 border border-brand-dark px-2 py-2 text-center">Disc.%</th>
+                  <th className="w-28 border border-brand-dark px-2 py-2 text-right">Amount (Rs.)</th>
                   <th className="w-6 border border-brand-dark px-1 py-2"></th>
                 </tr>
               </thead>
@@ -976,11 +976,6 @@ export default function DocumentForm({ type }: Props) {
             <p className="mb-1 mt-2 text-[10px] font-semibold uppercase tracking-wider text-gray-500">Tax Amount (in words)</p>
             <p className="break-words text-xs text-gray-700">{numberToWords(totals.totalGst)}</p>
           </div>
-        </section>
-
-        <section className="rounded-md border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
-          <label className="mb-1 block text-sm font-bold text-gray-800">Notes / Terms &amp; Conditions</label>
-          <textarea rows={3} value={header.notes} onChange={e => setH('notes', e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30" placeholder="Any additional notes or terms..." />
         </section>
 
         <div className="flex flex-col gap-3 no-print sm:flex-row sm:flex-wrap">
