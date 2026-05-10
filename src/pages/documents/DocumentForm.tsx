@@ -438,6 +438,8 @@ export default function DocumentForm({ type }: Props) {
   const [supplierForm, setSupplierForm] = useState<SupplierForm>(emptySupplierForm);
   const [materialForm, setMaterialForm] = useState<MaterialForm>(emptyMaterialForm);
   const [pdfAction, setPdfAction] = useState<'preview' | 'download' | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [savedStatus, setSavedStatus] = useState<DocumentStatus | null>(null);
 
   const { data: customers = [] } = useQuery({
     queryKey: ['customers'],
@@ -492,6 +494,8 @@ export default function DocumentForm({ type }: Props) {
     setBuyer(existingDoc.customer ?? null);
     setConsignee(existingDoc.consignee ?? null);
     setSupplier(existingDoc.supplier ?? null);
+    setSavedStatus(existingDoc.status);
+    setHasUnsavedChanges(false);
     const optionKey = optionFromDocument(existingDoc);
     const option = GST_OPTIONS.find(o => o.key === optionKey) ?? GST_OPTIONS[1];
     setGstOptionKey(optionKey);
@@ -537,24 +541,29 @@ export default function DocumentForm({ type }: Props) {
   }, [items, selectedGst.mode]);
 
   function setH(field: keyof Header, value: string) {
+    setHasUnsavedChanges(true);
     setHeader(prev => ({ ...prev, [field]: value }));
   }
 
   function updateItem(key: number, patch: Partial<LineItem>) {
+    setHasUnsavedChanges(true);
     setItems(prev => prev.map(item => item._key === key ? calcAmounts({ ...item, ...patch }) : item));
   }
 
   function changeGstOption(key: GstOptionKey) {
+    setHasUnsavedChanges(true);
     const option = GST_OPTIONS.find(o => o.key === key) ?? GST_OPTIONS[1];
     setGstOptionKey(key);
     setItems(prev => prev.map(item => calcAmounts({ ...item, gst_rate: option.rate })));
   }
 
   function addItem() {
+    setHasUnsavedChanges(true);
     setItems(prev => [...prev, newItem(selectedGst.rate)]);
   }
 
   function removeItem(key: number) {
+    setHasUnsavedChanges(true);
     setItems(prev => prev.length > 1 ? prev.filter(item => item._key !== key) : prev);
   }
 
@@ -642,6 +651,8 @@ export default function DocumentForm({ type }: Props) {
     onSuccess: (doc, status) => {
       toast(`Document ${status === 'draft' ? 'saved as draft' : 'confirmed'}.`);
       qc.invalidateQueries({ queryKey: ['documents'] });
+      setSavedStatus(status);
+      setHasUnsavedChanges(false);
       if (!isEdit) navigate(`/${route}/${doc.id}`);
     },
     onError: (error: any) => {
@@ -653,6 +664,7 @@ export default function DocumentForm({ type }: Props) {
     mutationFn: (payload: CustomerForm) => api.post('/customers', payload).then(r => unwrapResource<Customer>(r.data)),
     onSuccess: customer => {
       qc.invalidateQueries({ queryKey: ['customers'] });
+      setHasUnsavedChanges(true);
       if (quickCreate?.type === 'customer' && quickCreate.target === 'consignee') setConsignee(customer);
       else setBuyer(customer);
       setQuickCreate(null);
@@ -665,6 +677,7 @@ export default function DocumentForm({ type }: Props) {
     mutationFn: (payload: SupplierForm) => api.post('/suppliers', payload).then(r => unwrapResource<Supplier>(r.data)),
     onSuccess: createdSupplier => {
       qc.invalidateQueries({ queryKey: ['suppliers'] });
+      setHasUnsavedChanges(true);
       setSupplier(createdSupplier);
       setQuickCreate(null);
       toast('Supplier added.');
@@ -689,7 +702,7 @@ export default function DocumentForm({ type }: Props) {
   });
 
   async function downloadPdf() {
-    if (!id || pdfAction) return;
+    if (!id || pdfAction || !canGeneratePdf) return;
     setPdfAction('download');
     try {
       const response = await api.get(`/documents/${id}/pdf`, { responseType: 'blob' });
@@ -707,7 +720,7 @@ export default function DocumentForm({ type }: Props) {
   }
 
   async function previewPdf() {
-    if (!id || pdfAction) return;
+    if (!id || pdfAction || !canGeneratePdf) return;
     setPdfAction('preview');
     try {
       const response = await api.get(`/documents/${id}/preview`, { responseType: 'blob' });
@@ -720,6 +733,13 @@ export default function DocumentForm({ type }: Props) {
       setPdfAction(null);
     }
   }
+
+  const canGeneratePdf = isEdit && savedStatus === 'confirmed' && !hasUnsavedChanges && !saveMutation.isPending;
+  const pdfDisabledReason = hasUnsavedChanges
+    ? 'Confirm the latest changes before generating the PDF.'
+    : savedStatus !== 'confirmed'
+      ? 'Confirm the document before generating the PDF.'
+      : '';
 
   const customerDetails = (customer: Customer) => (
     <>
@@ -819,19 +839,19 @@ export default function DocumentForm({ type }: Props) {
           <div className={`grid gap-4 ${type === 'purchase_order' ? 'grid-cols-1 lg:grid-cols-3' : 'grid-cols-1 lg:grid-cols-2'}`}>
             {(type === 'invoice' || type === 'proforma_invoice') && (
               <>
-                <EntitySelect<Customer> label="Consignee (Ship To)" placeholder="Search customer..." options={customers} selected={consignee} onSelect={setConsignee} onCreate={() => openQuickCustomer('consignee')} createLabel="Add Customer" renderDetails={customerDetails} />
-                <EntitySelect<Customer> label="Buyer (Bill To)" placeholder="Search customer..." options={customers} selected={buyer} onSelect={setBuyer} onCreate={() => openQuickCustomer('buyer')} createLabel="Add Customer" renderDetails={customerDetails} />
+                <EntitySelect<Customer> label="Consignee (Ship To)" placeholder="Search customer..." options={customers} selected={consignee} onSelect={value => { setHasUnsavedChanges(true); setConsignee(value); }} onCreate={() => openQuickCustomer('consignee')} createLabel="Add Customer" renderDetails={customerDetails} />
+                <EntitySelect<Customer> label="Buyer (Bill To)" placeholder="Search customer..." options={customers} selected={buyer} onSelect={value => { setHasUnsavedChanges(true); setBuyer(value); }} onCreate={() => openQuickCustomer('buyer')} createLabel="Add Customer" renderDetails={customerDetails} />
               </>
             )}
             {type === 'purchase_order' && (
               <>
                 <StaticCompany label="Invoice To" />
                 <StaticCompany label="Consignee (Ship To)" />
-                <EntitySelect<Supplier> label="Supplier (Bill From)" placeholder="Search supplier..." options={suppliers} selected={supplier} onSelect={setSupplier} onCreate={openQuickSupplier} createLabel="Add Supplier" renderDetails={supplierDetails} />
+                <EntitySelect<Supplier> label="Supplier (Bill From)" placeholder="Search supplier..." options={suppliers} selected={supplier} onSelect={value => { setHasUnsavedChanges(true); setSupplier(value); }} onCreate={openQuickSupplier} createLabel="Add Supplier" renderDetails={supplierDetails} />
               </>
             )}
             {type === 'quotation' && (
-              <EntitySelect<Customer> label="Buyer" placeholder="Search customer..." options={customers} selected={buyer} onSelect={setBuyer} onCreate={() => openQuickCustomer('buyer')} createLabel="Add Customer" renderDetails={customerDetails} />
+              <EntitySelect<Customer> label="Buyer" placeholder="Search customer..." options={customers} selected={buyer} onSelect={value => { setHasUnsavedChanges(true); setBuyer(value); }} onCreate={() => openQuickCustomer('buyer')} createLabel="Add Customer" renderDetails={customerDetails} />
             )}
           </div>
         </section>
@@ -973,14 +993,15 @@ export default function DocumentForm({ type }: Props) {
           </button>
           {isEdit && (
             <>
-              <button type="button" disabled={Boolean(pdfAction)} onClick={previewPdf} className="flex items-center gap-2 rounded-lg bg-gray-100 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50">
+              <button type="button" disabled={Boolean(pdfAction) || !canGeneratePdf} onClick={previewPdf} title={pdfDisabledReason} className="flex items-center gap-2 rounded-lg bg-gray-100 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50">
                 {pdfAction === 'preview' ? <Loader2 size={16} className="animate-spin" /> : <Eye size={16} />}
                 {pdfAction === 'preview' ? 'Opening...' : 'Preview PDF'}
               </button>
-              <button type="button" disabled={Boolean(pdfAction)} onClick={downloadPdf} className="flex items-center gap-2 rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50">
+              <button type="button" disabled={Boolean(pdfAction) || !canGeneratePdf} onClick={downloadPdf} title={pdfDisabledReason} className="flex items-center gap-2 rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50">
                 {pdfAction === 'download' ? <Loader2 size={16} className="animate-spin" /> : <FileDown size={16} />}
                 {pdfAction === 'download' ? 'Generating...' : 'Generate PDF'}
               </button>
+              {pdfDisabledReason && <p className="basis-full text-xs font-medium text-amber-700">{pdfDisabledReason}</p>}
             </>
           )}
         </div>
