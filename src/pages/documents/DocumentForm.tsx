@@ -366,7 +366,7 @@ function MatSearch({ value, materials, onChange, onSelect, onCreate }: MatSearch
 
   return (
     <div ref={ref} className="relative">
-      <div className="flex min-w-[260px] gap-1">
+      <div className="flex min-w-[220px] gap-1 sm:min-w-[260px]">
         <input
           value={value}
           onChange={e => {
@@ -381,7 +381,7 @@ function MatSearch({ value, materials, onChange, onSelect, onCreate }: MatSearch
         </button>
       </div>
       {open && value && (
-        <div className="absolute z-[100] mt-1 max-h-64 min-w-[360px] overflow-y-auto rounded-md border border-gray-200 bg-white shadow-xl">
+        <div className="absolute z-[100] mt-1 max-h-64 min-w-[260px] max-w-[calc(100vw-2rem)] overflow-y-auto rounded-md border border-gray-200 bg-white shadow-xl sm:min-w-[360px]">
           {filtered.map(material => (
             <button
               key={material.id}
@@ -762,21 +762,21 @@ export default function DocumentForm({ type }: Props) {
   );
 
   return (
-    <div className="mx-auto max-w-[1280px] pb-24">
+    <div className="mx-auto w-full max-w-[1280px] pb-24">
       <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
+        <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-wider text-brand">{isEdit ? 'Edit document' : 'Create document'}</p>
-          <h1 className="mt-1 text-2xl font-bold tracking-wide text-gray-900">{TYPE_TITLE[type]}</h1>
-          <p className="mt-1 text-sm text-gray-500">{header.doc_number || 'Document number will be generated automatically'}</p>
+          <h1 className="mt-1 text-xl font-bold tracking-wide text-gray-900 sm:text-2xl">{TYPE_TITLE[type]}</h1>
+          <p className="mt-1 break-words text-sm text-gray-500">{header.doc_number || 'Document number will be generated automatically'}</p>
         </div>
-        <div className="rounded-md bg-brand px-5 py-3 text-right text-white shadow-sm">
+        <div className="rounded-md bg-brand px-4 py-3 text-left text-white shadow-sm sm:px-5 sm:text-right">
           <p className="text-sm font-bold">{COMPANY.name}</p>
-          <p className="mt-1 text-xs opacity-90">PAN: {COMPANY.pan} | GSTIN: {COMPANY.gstin} | {COMPANY.state} ({COMPANY.stateCode})</p>
+          <p className="mt-1 break-words text-xs leading-5 opacity-90">PAN: {COMPANY.pan} | GSTIN: {COMPANY.gstin} | {COMPANY.state} ({COMPANY.stateCode})</p>
         </div>
       </div>
 
       <div className="space-y-5">
-        <section className="rounded-md border border-gray-200 bg-white p-5 shadow-sm">
+        <section className="rounded-md border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <MetaRow label={TYPE_DOC_LABEL[type]} value={header.doc_number} onChange={value => setH('doc_number', value)} />
             <MetaRow label="Dated" value={header.date} onChange={value => setH('date', value)} type="date" />
@@ -856,17 +856,17 @@ export default function DocumentForm({ type }: Props) {
           </div>
         </section>
 
-        <section className="overflow-visible rounded-md border border-gray-200 bg-white shadow-sm">
-          <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
+        <section className="overflow-hidden rounded-md border border-gray-200 bg-white shadow-sm">
+          <div className="flex flex-col gap-3 border-b border-gray-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
             <div>
               <p className="text-xs text-gray-500">Add materials, quantity, rate and discount</p>
             </div>
-            <button type="button" onClick={addItem} className="flex items-center gap-1.5 rounded-md bg-brand px-3 py-2 text-xs font-semibold text-white hover:bg-brand-dark">
+            <button type="button" onClick={addItem} className="flex w-full items-center justify-center gap-1.5 rounded-md bg-brand px-3 py-2 text-xs font-semibold text-white hover:bg-brand-dark sm:w-auto">
               <Plus size={14} /> Add Row
             </button>
           </div>
-          <div className="overflow-visible">
-            <table className="w-full border-collapse text-xs">
+          <div className="overflow-x-auto">
+            <table className="min-w-[760px] border-collapse text-xs">
               <thead>
                 <tr className="bg-brand text-white">
                   <th className="w-12 border border-brand-dark px-2 py-2 text-center">S.No</th>
@@ -915,7 +915,7 @@ export default function DocumentForm({ type }: Props) {
           </div>
         </section>
 
-        <section className="rounded-md border border-gray-200 bg-white p-5 shadow-sm">
+        <section className="rounded-md border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
           <h2 className="text-sm font-bold text-gray-800">GST Percentage</h2>
           <div className="mt-3 grid gap-2 md:grid-cols-3">
             {GST_OPTIONS.map(option => (
@@ -934,11 +934,11 @@ export default function DocumentForm({ type }: Props) {
         </section>
 
         <section className="overflow-hidden rounded-md border border-gray-200 bg-white shadow-sm">
-          <div className="border-b border-gray-100 px-5 py-4">
+          <div className="border-b border-gray-100 px-4 py-4 sm:px-5">
             <h2 className="text-sm font-bold text-gray-800">Totals</h2>
             <p className="text-xs text-gray-500">Live calculation for quantity, tax and amount</p>
           </div>
-          <table className="w-full text-xs">
+          <table className="w-full table-fixed text-xs">
             <tbody>
               <tr className="border-b border-gray-100">
                 <td className="px-4 py-2 text-gray-600">Subtotal</td>
@@ -952,7 +952,7 @@ export default function DocumentForm({ type }: Props) {
                   </tr>
                 ) : (
                   <tr key={rate} className="border-b border-gray-100">
-                    <td className="px-4 py-2 text-gray-600">{gstPrefix} GST @ {rate}% (CGST {Number(rate) / 2}% + SGST {Number(rate) / 2}%)</td>
+                    <td className="break-words px-4 py-2 text-gray-600">{gstPrefix} GST @ {rate}% (CGST {Number(rate) / 2}% + SGST {Number(rate) / 2}%)</td>
                     <td className="px-4 py-2 text-right font-medium">Rs. {formatIndian(gstAmt)}</td>
                   </tr>
                 )
@@ -972,31 +972,31 @@ export default function DocumentForm({ type }: Props) {
           </table>
           <div className="border-t border-gray-200 bg-gray-50 px-4 py-3">
             <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-500">Amount Chargeable (in words)</p>
-            <p className="text-xs font-medium text-gray-700">{numberToWords(totals.grandTotal)} <span className="text-gray-400">(E. &amp; O.E)</span></p>
+            <p className="break-words text-xs font-medium text-gray-700">{numberToWords(totals.grandTotal)} <span className="text-gray-400">(E. &amp; O.E)</span></p>
             <p className="mb-1 mt-2 text-[10px] font-semibold uppercase tracking-wider text-gray-500">Tax Amount (in words)</p>
-            <p className="text-xs text-gray-700">{numberToWords(totals.totalGst)}</p>
+            <p className="break-words text-xs text-gray-700">{numberToWords(totals.totalGst)}</p>
           </div>
         </section>
 
-        <section className="rounded-md border border-gray-200 bg-white p-5 shadow-sm">
+        <section className="rounded-md border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
           <label className="mb-1 block text-sm font-bold text-gray-800">Notes / Terms &amp; Conditions</label>
           <textarea rows={3} value={header.notes} onChange={e => setH('notes', e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30" placeholder="Any additional notes or terms..." />
         </section>
 
-        <div className="flex flex-wrap gap-3 no-print">
-          <button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate('draft')} className="flex items-center gap-2 rounded-lg bg-gray-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50">
+        <div className="flex flex-col gap-3 no-print sm:flex-row sm:flex-wrap">
+          <button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate('draft')} className="flex w-full items-center justify-center gap-2 rounded-lg bg-gray-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 sm:w-auto">
             <Save size={16} /> {saveMutation.isPending ? 'Saving...' : 'Save Draft'}
           </button>
-          <button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate('confirmed')} className="flex items-center gap-2 rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50">
+          <button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate('confirmed')} className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50 sm:w-auto">
             <CheckCircle size={16} /> Confirm
           </button>
           {isEdit && (
             <>
-              <button type="button" disabled={Boolean(pdfAction) || !canGeneratePdf} onClick={previewPdf} title={pdfDisabledReason} className="flex items-center gap-2 rounded-lg bg-gray-100 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50">
+              <button type="button" disabled={Boolean(pdfAction) || !canGeneratePdf} onClick={previewPdf} title={pdfDisabledReason} className="flex w-full items-center justify-center gap-2 rounded-lg bg-gray-100 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto">
                 {pdfAction === 'preview' ? <Loader2 size={16} className="animate-spin" /> : <Eye size={16} />}
                 {pdfAction === 'preview' ? 'Opening...' : 'Preview PDF'}
               </button>
-              <button type="button" disabled={Boolean(pdfAction) || !canGeneratePdf} onClick={downloadPdf} title={pdfDisabledReason} className="flex items-center gap-2 rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50">
+              <button type="button" disabled={Boolean(pdfAction) || !canGeneratePdf} onClick={downloadPdf} title={pdfDisabledReason} className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto">
                 {pdfAction === 'download' ? <Loader2 size={16} className="animate-spin" /> : <FileDown size={16} />}
                 {pdfAction === 'download' ? 'Generating...' : 'Generate PDF'}
               </button>

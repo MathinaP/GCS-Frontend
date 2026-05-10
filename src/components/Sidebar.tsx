@@ -62,25 +62,25 @@ export default function Sidebar() {
   const initials = user?.name?.charAt(0).toUpperCase() ?? '?';
 
   return (
-    <aside className="w-60 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col no-print">
+    <aside className="no-print flex max-h-[42vh] w-full flex-shrink-0 flex-col border-b border-gray-200 bg-white md:max-h-none md:h-screen md:w-60 md:border-b-0 md:border-r">
 
       {/* Logo */}
-      <div className="flex items-center gap-3 px-4 py-5 border-b border-gray-100">
+      <div className="flex items-center gap-3 border-b border-gray-100 px-4 py-3 md:py-5">
         <img
           src="/logo.png"
           alt="Logo"
-          className="w-12 h-12 object-contain"
+          className="h-10 w-10 object-contain md:h-12 md:w-12"
           onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
         />
-        <span className="font-bold text-gray-800 text-sm leading-tight">Go Care Solutions</span>
+        <span className="text-sm font-bold leading-tight text-gray-800">Go Care Solutions</span>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto py-4 px-2">
+      <nav className="flex gap-2 overflow-x-auto px-2 py-2 md:block md:flex-1 md:overflow-y-auto md:py-4">
         {sections.map(section => (
-          <div key={section.title} className="mb-4">
+          <div key={section.title} className="flex flex-shrink-0 gap-2 md:mb-4 md:block">
             {section.title && (
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-3 mb-1">
+              <p className="mb-1 hidden px-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400 md:block">
                 {section.title}
               </p>
             )}
@@ -90,9 +90,9 @@ export default function Sidebar() {
                 to={item.to}
                 end={item.to === '/'}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  `flex items-center gap-2 whitespace-nowrap rounded-md px-3 py-2 text-xs font-medium transition-colors md:gap-3 md:text-sm ${
                     isActive
-                      ? 'bg-brand-light text-brand border-l-4 border-brand pl-2'
+                      ? 'bg-brand-light text-brand md:border-l-4 md:border-brand md:pl-2'
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   }`
                 }
@@ -106,7 +106,7 @@ export default function Sidebar() {
       </nav>
 
       {/* User + Logout */}
-      <div className="border-t border-gray-100 px-3 py-3 space-y-2">
+      <div className="hidden space-y-2 border-t border-gray-100 px-3 py-3 md:block">
         {/* Avatar + name/email */}
         <div className="flex items-center gap-3 px-1">
           <div className="w-8 h-8 rounded-full bg-brand text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
