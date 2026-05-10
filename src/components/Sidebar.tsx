@@ -65,14 +65,23 @@ export default function Sidebar() {
     <aside className="no-print flex max-h-[42vh] w-full flex-shrink-0 flex-col border-b border-gray-200 bg-white md:max-h-none md:h-screen md:w-60 md:border-b-0 md:border-r">
 
       {/* Logo */}
-      <div className="flex items-center gap-3 border-b border-gray-100 px-4 py-3 md:py-5">
-        <img
-          src="/logo.png"
-          alt="Logo"
-          className="h-10 w-10 object-contain md:h-12 md:w-12"
-          onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-        />
-        <span className="text-sm font-bold leading-tight text-gray-800">Go Care Solutions</span>
+      <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-3 md:justify-start md:py-5">
+        <div className="flex min-w-0 items-center gap-3">
+          <img
+            src="/logo.png"
+            alt="Logo"
+            className="h-10 w-10 flex-shrink-0 object-contain md:h-12 md:w-12"
+            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+          <span className="truncate text-sm font-bold leading-tight text-gray-800 md:whitespace-normal">Go Care Solutions</span>
+        </div>
+        <button
+          onClick={() => setConfirmOpen(true)}
+          className="flex flex-shrink-0 items-center gap-1 rounded-md px-3 py-2 text-xs font-medium text-gray-600 hover:bg-brand-light hover:text-brand md:hidden"
+        >
+          <LogOut size={15} />
+          Logout
+        </button>
       </div>
 
       {/* Nav */}
