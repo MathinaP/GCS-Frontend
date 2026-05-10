@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle, Eye, FileDown, Plus, Save, Trash2 } from 'lucide-react';
+import { CheckCircle, Eye, FileDown, Loader2, Plus, Save, Trash2 } from 'lucide-react';
 import api from '../../lib/api';
 import {
   type Customer,
@@ -437,6 +437,7 @@ export default function DocumentForm({ type }: Props) {
   const [customerForm, setCustomerForm] = useState<CustomerForm>(emptyCustomerForm);
   const [supplierForm, setSupplierForm] = useState<SupplierForm>(emptySupplierForm);
   const [materialForm, setMaterialForm] = useState<MaterialForm>(emptyMaterialForm);
+  const [pdfAction, setPdfAction] = useState<'preview' | 'download' | null>(null);
 
   const { data: customers = [] } = useQuery({
     queryKey: ['customers'],
@@ -688,7 +689,8 @@ export default function DocumentForm({ type }: Props) {
   });
 
   async function downloadPdf() {
-    if (!id) return;
+    if (!id || pdfAction) return;
+    setPdfAction('download');
     try {
       const response = await api.get(`/documents/${id}/pdf`, { responseType: 'blob' });
       const url = URL.createObjectURL(response.data);
@@ -699,11 +701,14 @@ export default function DocumentForm({ type }: Props) {
       setTimeout(() => URL.revokeObjectURL(url), 30_000);
     } catch {
       toast('Failed to download PDF.', 'error');
+    } finally {
+      setPdfAction(null);
     }
   }
 
   async function previewPdf() {
-    if (!id) return;
+    if (!id || pdfAction) return;
+    setPdfAction('preview');
     try {
       const response = await api.get(`/documents/${id}/preview`, { responseType: 'blob' });
       const url = URL.createObjectURL(response.data);
@@ -711,6 +716,8 @@ export default function DocumentForm({ type }: Props) {
       setTimeout(() => URL.revokeObjectURL(url), 30_000);
     } catch {
       toast('Failed to open PDF preview.', 'error');
+    } finally {
+      setPdfAction(null);
     }
   }
 
@@ -966,11 +973,13 @@ export default function DocumentForm({ type }: Props) {
           </button>
           {isEdit && (
             <>
-              <button type="button" onClick={previewPdf} className="flex items-center gap-2 rounded-lg bg-gray-100 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-200">
-                <Eye size={16} /> Preview PDF
+              <button type="button" disabled={Boolean(pdfAction)} onClick={previewPdf} className="flex items-center gap-2 rounded-lg bg-gray-100 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50">
+                {pdfAction === 'preview' ? <Loader2 size={16} className="animate-spin" /> : <Eye size={16} />}
+                {pdfAction === 'preview' ? 'Opening...' : 'Preview PDF'}
               </button>
-              <button type="button" onClick={downloadPdf} className="flex items-center gap-2 rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-dark">
-                <FileDown size={16} /> Generate PDF
+              <button type="button" disabled={Boolean(pdfAction)} onClick={downloadPdf} className="flex items-center gap-2 rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50">
+                {pdfAction === 'download' ? <Loader2 size={16} className="animate-spin" /> : <FileDown size={16} />}
+                {pdfAction === 'download' ? 'Generating...' : 'Generate PDF'}
               </button>
             </>
           )}
