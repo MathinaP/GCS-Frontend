@@ -144,20 +144,21 @@ export default function CustomersPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           {(
             [
-              { key: 'name', label: 'Name *', required: true },
-              { key: 'mobile', label: 'Mobile *', required: true },
-              { key: 'email', label: 'Email', required: false },
-              { key: 'state_name', label: 'State Name *', required: true },
-              { key: 'state_code', label: 'State Code', required: false },
-            ] as { key: keyof FormState; label: string; required: boolean }[]
-          ).map(({ key, label, required }) => (
+              { key: 'name', label: 'Name *', required: true, disabled: false },
+              { key: 'mobile', label: 'Mobile *', required: true, disabled: false },
+              { key: 'email', label: 'Email', required: false, disabled: false },
+              { key: 'state_name', label: 'State Name', required: false, disabled: true },
+              { key: 'state_code', label: 'State Code', required: false, disabled: true },
+            ] as { key: keyof FormState; label: string; required: boolean; disabled: boolean }[]
+          ).map(({ key, label, required, disabled }) => (
             <div key={key}>
               <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
               <input
                 required={required}
+                disabled={disabled}
                 value={form[key]}
                 onChange={e => set(key, e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
               />
             </div>
           ))}
