@@ -20,7 +20,7 @@ interface FormState {
 
 const empty = (): FormState => ({
   name: '', address: '', mobile: '', email: '',
-  pan_number: '', gstin: '', state_name: '', state_code: '',
+  pan_number: '', gstin: '', state_name: 'Tamil Nadu', state_code: '33',
 });
 
 export default function CustomersPage() {

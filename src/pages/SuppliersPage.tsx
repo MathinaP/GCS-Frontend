@@ -21,7 +21,7 @@ interface FormState {
 
 const empty = (): FormState => ({
   name: '', contact_person: '', address: '', mobile: '',
-  email: '', pan_number: '', gstin: '', state_name: '', state_code: '',
+  email: '', pan_number: '', gstin: '', state_name: 'Tamil Nadu', state_code: '33',
 });
 
 export default function SuppliersPage() {
