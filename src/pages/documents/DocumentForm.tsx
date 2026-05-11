@@ -438,6 +438,8 @@ export default function DocumentForm({ type }: Props) {
   const [supplierForm, setSupplierForm] = useState<SupplierForm>(emptySupplierForm);
   const [materialForm, setMaterialForm] = useState<MaterialForm>(emptyMaterialForm);
   const [pdfAction, setPdfAction] = useState<'preview' | 'download' | null>(null);
+  const [sealDialog, setSealDialog] = useState<'preview' | 'download' | null>(null);
+  const [includeSeal, setIncludeSeal] = useState(true);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [savedStatus, setSavedStatus] = useState<DocumentStatus | null>(null);
 
@@ -701,11 +703,12 @@ export default function DocumentForm({ type }: Props) {
     onError: () => toast('Material save failed.', 'error'),
   });
 
-  async function downloadPdf() {
+  async function runDownloadPdf() {
     if (!id || pdfAction || !canGeneratePdf) return;
+    setSealDialog(null);
     setPdfAction('download');
     try {
-      const response = await api.get(`/documents/${id}/pdf`, { responseType: 'blob' });
+      const response = await api.get(`/documents/${id}/pdf`, { responseType: 'blob', params: { seal: includeSeal ? 1 : 0 } });
       const url = URL.createObjectURL(response.data);
       const anchor = document.createElement('a');
       anchor.href = url;
@@ -719,11 +722,12 @@ export default function DocumentForm({ type }: Props) {
     }
   }
 
-  async function previewPdf() {
+  async function runPreviewPdf() {
     if (!id || pdfAction || !canGeneratePdf) return;
+    setSealDialog(null);
     setPdfAction('preview');
     try {
-      const response = await api.get(`/documents/${id}/preview`, { responseType: 'blob' });
+      const response = await api.get(`/documents/${id}/preview`, { responseType: 'blob', params: { seal: includeSeal ? 1 : 0 } });
       const url = URL.createObjectURL(response.data);
       window.open(url, '_blank', 'noopener,noreferrer');
       setTimeout(() => URL.revokeObjectURL(url), 30_000);
@@ -733,6 +737,9 @@ export default function DocumentForm({ type }: Props) {
       setPdfAction(null);
     }
   }
+
+  function downloadPdf() { if (canGeneratePdf) setSealDialog('download'); }
+  function previewPdf() { if (canGeneratePdf) setSealDialog('preview'); }
 
   const canGeneratePdf = isEdit && savedStatus === 'confirmed' && !hasUnsavedChanges && !saveMutation.isPending;
   const pdfDisabledReason = hasUnsavedChanges
@@ -1100,6 +1107,34 @@ export default function DocumentForm({ type }: Props) {
           </div>
         </form>
       </SlideOver>
+
+      {sealDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/30" onClick={() => setSealDialog(null)} />
+          <div className="relative bg-white rounded-xl shadow-xl p-6 max-w-xs w-full mx-4">
+            <h3 className="font-semibold text-gray-800 mb-1">PDF Options</h3>
+            <p className="text-xs text-gray-500 mb-5">Choose what to include before generating the PDF.</p>
+            <div className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-3 mb-6">
+              <span className="text-sm font-medium text-gray-700">Include company seal</span>
+              <button
+                type="button"
+                onClick={() => setIncludeSeal(v => !v)}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors focus:outline-none ${includeSeal ? 'bg-brand' : 'bg-gray-300'}`}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${includeSeal ? 'translate-x-6' : 'translate-x-1'}`} />
+              </button>
+            </div>
+            <div className="flex justify-end gap-3">
+              <button type="button" onClick={() => setSealDialog(null)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg">
+                Cancel
+              </button>
+              <button type="button" onClick={() => sealDialog === 'preview' ? runPreviewPdf() : runDownloadPdf()} className="px-4 py-2 text-sm font-medium text-white bg-brand hover:bg-brand-dark rounded-lg">
+                {sealDialog === 'preview' ? 'Preview PDF' : 'Download PDF'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
