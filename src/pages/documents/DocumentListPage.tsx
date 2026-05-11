@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, FileDown, Pencil, Trash2 } from 'lucide-react';
 import api from '../../lib/api';
-import { type Document, type DocumentType } from '../../types';
+import { type Document, type DocumentType, type PaymentStatus } from '../../types';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import { useToast } from '../../context/ToastContext';
 import { formatIndian } from '../../lib/numberToWords';
@@ -32,6 +32,20 @@ const STATUS_BADGE: Record<string, string> = {
   cancelled: 'bg-brand-light text-brand',
 };
 
+const PAYMENT_STATUS_OPTIONS: Partial<Record<DocumentType, PaymentStatus[]>> = {
+  invoice:        ['unpaid', 'paid'],
+  purchase_order: ['unpaid', 'paid'],
+  quotation:      ['pending', 'approved', 'rejected'],
+};
+
+const PAYMENT_STATUS_BADGE: Record<PaymentStatus, string> = {
+  unpaid:   'bg-red-100 text-red-700',
+  paid:     'bg-green-100 text-green-700',
+  pending:  'bg-amber-100 text-amber-700',
+  approved: 'bg-green-100 text-green-700',
+  rejected: 'bg-red-100 text-red-700',
+};
+
 export default function DocumentListPage({ type }: Props) {
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -46,6 +60,16 @@ export default function DocumentListPage({ type }: Props) {
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [sealTarget, setSealTarget] = useState<Document | null>(null);
   const [includeSeal, setIncludeSeal] = useState(true);
+  const [updatingPayment, setUpdatingPayment] = useState<number | null>(null);
+
+  const paymentStatusMutation = useMutation({
+    mutationFn: ({ id, payment_status }: { id: number; payment_status: PaymentStatus }) =>
+      api.patch(`/documents/${id}/payment-status`, { payment_status }),
+    onMutate: ({ id }) => setUpdatingPayment(id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['documents'] }); toast('Status updated.'); },
+    onError: () => toast('Failed to update status.', 'error'),
+    onSettled: () => setUpdatingPayment(null),
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ['documents', type, search, status, from, to, page],
@@ -152,15 +176,16 @@ export default function DocumentListPage({ type }: Props) {
               <th className="px-4 py-3 text-left font-medium">Party Name</th>
               <th className="px-4 py-3 text-right font-medium">Grand Total (₹)</th>
               <th className="px-4 py-3 text-center font-medium">Status</th>
+              {PAYMENT_STATUS_OPTIONS[type] && <th className="px-4 py-3 text-center font-medium">Payment Status</th>}
               <th className="px-4 py-3 text-center font-medium">Actions</th>
             </tr>
           </thead>
           <tbody>
             {isLoading && (
-              <tr><td colSpan={6} className="text-center py-10 text-gray-400">Loading...</td></tr>
+              <tr><td colSpan={PAYMENT_STATUS_OPTIONS[type] ? 7 : 6} className="text-center py-10 text-gray-400">Loading...</td></tr>
             )}
             {!isLoading && (!data?.data || data.data.length === 0) && (
-              <tr><td colSpan={6} className="text-center py-10 text-gray-400">No {TYPE_LABEL[type].toLowerCase()} found.</td></tr>
+              <tr><td colSpan={PAYMENT_STATUS_OPTIONS[type] ? 7 : 6} className="text-center py-10 text-gray-400">No {TYPE_LABEL[type].toLowerCase()} found.</td></tr>
             )}
             {data?.data?.map((doc, i) => (
               <tr key={doc.id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
@@ -175,6 +200,24 @@ export default function DocumentListPage({ type }: Props) {
                     {doc.status}
                   </span>
                 </td>
+                {PAYMENT_STATUS_OPTIONS[type] && (
+                  <td className="px-4 py-3 text-center">
+                    {doc.status === 'confirmed' ? (
+                      <select
+                        disabled={updatingPayment === doc.id}
+                        value={doc.payment_status ?? (type === 'quotation' ? 'pending' : 'unpaid')}
+                        onChange={e => paymentStatusMutation.mutate({ id: doc.id, payment_status: e.target.value as PaymentStatus })}
+                        className={`text-xs font-medium rounded-full px-2 py-0.5 border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand ${PAYMENT_STATUS_BADGE[doc.payment_status ?? (type === 'quotation' ? 'pending' : 'unpaid')]}`}
+                      >
+                        {PAYMENT_STATUS_OPTIONS[type]!.map(opt => (
+                          <option key={opt} value={opt}>{opt.charAt(0).toUpperCase() + opt.slice(1)}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span className="text-xs text-gray-400">—</span>
+                    )}
+                  </td>
+                )}
                 <td className="px-4 py-3 text-center">
                   <div className="flex items-center justify-center gap-2">
                     <button

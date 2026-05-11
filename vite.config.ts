@@ -7,7 +7,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'https://gcs-backend-m19b.onrender.com',
+        target: 'http://localhost:8000',
         changeOrigin: true,
       },
     },

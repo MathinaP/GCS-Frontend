@@ -52,6 +52,7 @@ export interface DocumentItem {
 
 export type DocumentType = 'invoice' | 'proforma_invoice' | 'purchase_order' | 'quotation';
 export type DocumentStatus = 'draft' | 'confirmed' | 'cancelled';
+export type PaymentStatus = 'paid' | 'unpaid' | 'pending' | 'approved' | 'rejected';
 
 export interface Document {
   id: number;
@@ -59,6 +60,7 @@ export interface Document {
   doc_number: string;
   date: string;
   status: DocumentStatus;
+  payment_status: PaymentStatus | null;
   customer_id: number | null;
   consignee_id: number | null;
   supplier_id: number | null;
