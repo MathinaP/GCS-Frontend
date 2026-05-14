@@ -7,7 +7,7 @@ import SlideOver from '../components/SlideOver';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useToast } from '../context/ToastContext';
 
-const UNITS = ['Nos', 'Kg', 'Ltr', 'Box', 'Set', 'Pair', 'Meter', 'Sq.Ft', 'Hours', 'MT', 'Bag'];
+const UNITS = ['Nos', 'Kg', 'Ltr', 'Box', 'Set', 'Pair', 'Meter', 'Sq.Ft', 'Hours', 'MT', 'Bag','Ls'];
 const GST_RATES = [0, 5, 12, 18, 28];
 
 interface FormState {
