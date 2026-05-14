@@ -2,12 +2,11 @@ import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Pencil, Trash2, Search, ToggleLeft, ToggleRight } from 'lucide-react';
 import api from '../lib/api';
-import { type Material } from '../types';
+import { type Material, type Unit } from '../types';
 import SlideOver from '../components/SlideOver';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useToast } from '../context/ToastContext';
 
-const UNITS = ['Nos', 'Kg', 'Ltr', 'Box', 'Set', 'Pair', 'Meter', 'Sq.Ft', 'Hours', 'MT', 'Bag','Ls'];
 const GST_RATES = [0, 5, 12, 18, 28];
 
 interface FormState {
@@ -40,6 +39,10 @@ export default function MaterialsPage() {
   const { data, isLoading } = useQuery({
     queryKey: ['materials'],
     queryFn: () => api.get<{ data: Material[] }>('/materials').then(r => r.data.data),
+  });
+  const { data: units = [] } = useQuery({
+    queryKey: ['units'],
+    queryFn: () => api.get<{ data: Unit[] }>('/units').then(r => r.data.data),
   });
 
   const materials = useMemo(() => {
@@ -205,7 +208,7 @@ export default function MaterialsPage() {
               onChange={e => set('unit_of_measurement', e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
             >
-              {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
+              {units.filter(u => u.is_active).map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
             </select>
           </div>
 

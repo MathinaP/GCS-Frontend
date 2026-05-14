@@ -10,6 +10,7 @@ import {
   type DocumentType,
   type Material,
   type Supplier,
+  type Unit,
 } from '../../types';
 import { formatIndian, numberToWords } from '../../lib/numberToWords';
 import { useToast } from '../../context/ToastContext';
@@ -54,7 +55,6 @@ const GST_LABEL_PREFIX: Record<DocumentType, string> = {
   quotation: '',
 };
 
-const UNITS = ['Nos', 'Kg', 'Ltr', 'Box', 'Set', 'Pair', 'Meter', 'Sq.Ft', 'Hours', 'MT', 'Bag'];
 const GST_RATES = [0, 5, 12, 18, 28];
 const GST_OPTIONS = [
   { key: 'igst-18', label: 'IGST 18%', rate: 18, mode: 'igst' },
@@ -454,6 +454,10 @@ export default function DocumentForm({ type }: Props) {
   const { data: materials = [] } = useQuery({
     queryKey: ['materials'],
     queryFn: () => api.get('/materials').then(r => r.data.data as Material[]),
+  });
+  const { data: units = [] } = useQuery({
+    queryKey: ['units'],
+    queryFn: () => api.get('/units').then(r => r.data.data as Unit[]),
   });
   const { data: existingDoc } = useQuery({
     queryKey: ['document', id],
@@ -1084,7 +1088,7 @@ export default function DocumentForm({ type }: Props) {
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-600">Unit of Measurement *</label>
             <select required value={materialForm.unit_of_measurement} onChange={e => setMaterialForm(f => ({ ...f, unit_of_measurement: e.target.value }))} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand">
-              {UNITS.map(unit => <option key={unit} value={unit}>{unit}</option>)}
+              {units.filter(u => u.is_active).map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
             </select>
           </div>
           <div>

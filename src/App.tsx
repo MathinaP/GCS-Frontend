@@ -6,6 +6,7 @@ import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import MaterialsPage from './pages/MaterialsPage';
+import UnitsPage from './pages/UnitsPage';
 import CustomersPage from './pages/CustomersPage';
 import DocumentCountersPage from './pages/DocumentCountersPage';
 import SuppliersPage from './pages/SuppliersPage';
@@ -84,6 +85,7 @@ export default function App() {
                 <Route path="suppliers" element={<SuppliersPage />} />
                 <Route path="materials" element={<MaterialsPage />} />
                 <Route path="document-counters" element={<DocumentCountersPage />} />
+                <Route path="units" element={<UnitsPage />} />
               </Route>
             </Routes>
           </BrowserRouter>

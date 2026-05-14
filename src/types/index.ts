@@ -1,3 +1,9 @@
+export interface Unit {
+  id: number;
+  name: string;
+  is_active: boolean;
+}
+
 export interface Material {
   id: number;
   material_name: string;

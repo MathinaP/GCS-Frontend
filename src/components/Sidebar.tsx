@@ -10,6 +10,7 @@ import {
   Truck,
   Package,
   ListOrdered,
+  Ruler,
   LogOut,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -44,6 +45,7 @@ const sections: NavSection[] = [
       { to: '/suppliers', label: 'Suppliers', icon: <Truck size={18} /> },
       { to: '/materials', label: 'Materials', icon: <Package size={18} /> },
       { to: '/document-counters', label: 'Document Counters', icon: <ListOrdered size={18} /> },
+      { to: '/units', label: 'Units', icon: <Ruler size={18} /> },
     ],
   },
 ];
