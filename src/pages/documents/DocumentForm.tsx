@@ -892,11 +892,19 @@ export default function DocumentForm({ type }: Props) {
                 </tr>
               </thead>
               <tbody>
-                {items.map((item, index) => (
+                {items.map((item, index) => {
+                  const isDuplicate = item.material_id !== null &&
+                    items.filter(i => i.material_id === item.material_id).length > 1;
+                  return (
                   <tr key={item._key} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                     <td className="border border-gray-200 px-2 py-1 text-center text-gray-500">{index + 1}</td>
                     <td className="border border-gray-200 px-1 py-1">
                       <MatSearch value={item.description} materials={materials} onChange={value => updateItem(item._key, { description: value, material_id: null })} onSelect={material => selectMaterial(item._key, material)} onCreate={() => openQuickMaterial(item._key, item.description)} />
+                      {isDuplicate && (
+                        <div className="mt-0.5 flex items-center gap-1 text-[10px] font-medium text-amber-600">
+                          <span>⚠</span><span>Already added in this document</span>
+                        </div>
+                      )}
                     </td>
                     <td className="border border-gray-200 px-1 py-1">
                       <input value={item.hsn_sac} onChange={e => updateItem(item._key, { hsn_sac: e.target.value })} className="w-full rounded border border-gray-200 px-2 py-1 text-center text-xs focus:outline-none focus:ring-1 focus:ring-brand" />
@@ -920,7 +928,8 @@ export default function DocumentForm({ type }: Props) {
                       </button>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
