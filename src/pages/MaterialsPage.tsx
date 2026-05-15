@@ -35,6 +35,7 @@ export default function MaterialsPage() {
   const [editing, setEditing] = useState<Material | null>(null);
   const [form, setForm] = useState<FormState>(empty());
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['materials'],
@@ -62,9 +63,14 @@ export default function MaterialsPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['materials'] });
       toast(editing ? 'Material updated.' : 'Material added.');
+      setNameError(null);
       setSlideOpen(false);
     },
-    onError: () => toast('Save failed.', 'error'),
+    onError: (err: any) => {
+      const msg = err?.response?.data?.errors?.material_name?.[0];
+      if (msg) setNameError('Material already exists.');
+      else toast('Save failed.', 'error');
+    },
   });
 
   const deleteMutation = useMutation({
@@ -80,10 +86,12 @@ export default function MaterialsPage() {
   function openNew() {
     setEditing(null);
     setForm(empty());
+    setNameError(null);
     setSlideOpen(true);
   }
 
   function openEdit(m: Material) {
+    setNameError(null);
     setEditing(m);
     setForm({
       material_name: m.material_name,
@@ -195,9 +203,10 @@ export default function MaterialsPage() {
             <input
               required
               value={form.material_name}
-              onChange={e => set('material_name', e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+              onChange={e => { set('material_name', e.target.value); setNameError(null); }}
+              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 ${nameError ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-brand'}`}
             />
+            {nameError && <p className="mt-1 text-xs text-red-500">{nameError}</p>}
           </div>
 
           <div>
