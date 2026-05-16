@@ -75,9 +75,13 @@ export default function MaterialsPage() {
       setSlideOpen(false);
     },
     onError: (err: any) => {
-      const msg = err?.response?.data?.errors?.material_name?.[0];
-      if (msg) setNameError('Material already exists.');
-      else toast('Save failed.', 'error');
+      const errors = err?.response?.data?.errors;
+      if (errors?.material_name) {
+        setNameError('Material name already exists.');
+        toast('Material name already exists.', 'error');
+      } else {
+        toast(err?.response?.data?.message || 'Save failed.', 'error');
+      }
     },
   });
 
@@ -114,6 +118,15 @@ export default function MaterialsPage() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const nameLower = form.material_name.trim().toLowerCase();
+    const duplicate = data?.find(m =>
+      m.material_name.toLowerCase() === nameLower && m.id !== editing?.id
+    );
+    if (duplicate) {
+      setNameError('Material name already exists.');
+      toast('Material name already exists.', 'error');
+      return;
+    }
     saveMutation.mutate({
       ...form,
       default_rate: parseFloat(form.default_rate) || 0,

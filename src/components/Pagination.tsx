@@ -39,7 +39,7 @@ export default function Pagination({ page, lastPage, total, perPage, onChange }:
           <ChevronLeft size={15} />
         </button>
 
-        {pages.map((p, i) =>
+        {pages.map((p) =>
           typeof p === 'string' ? (
             <span key={p} className="px-1 text-gray-400 text-xs">…</span>
           ) : (
