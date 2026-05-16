@@ -1,11 +1,14 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Pencil, Trash2, Search, ToggleLeft, ToggleRight } from 'lucide-react';
 import api from '../lib/api';
 import { type Unit } from '../types';
 import SlideOver from '../components/SlideOver';
 import ConfirmDialog from '../components/ConfirmDialog';
+import Pagination from '../components/Pagination';
 import { useToast } from '../context/ToastContext';
+
+const PER_PAGE = 10;
 
 interface FormState {
   name: string;
@@ -18,6 +21,7 @@ export default function UnitsPage() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
   const [slideOpen, setSlideOpen] = useState(false);
   const [editing, setEditing] = useState<Unit | null>(null);
   const [form, setForm] = useState<FormState>(empty());
@@ -28,11 +32,16 @@ export default function UnitsPage() {
     queryFn: () => api.get<{ data: Unit[] }>('/units').then(r => r.data.data),
   });
 
-  const units = useMemo(() => {
+  const filtered = useMemo(() => {
     if (!data) return [];
     const q = search.toLowerCase();
     return data.filter(u => u.name.toLowerCase().includes(q));
   }, [data, search]);
+
+  useEffect(() => { setPage(1); }, [search]);
+
+  const lastPage = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+  const units = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   const saveMutation = useMutation({
     mutationFn: (payload: FormState) =>
@@ -111,7 +120,7 @@ export default function UnitsPage() {
             )}
             {units.map((u, i) => (
               <tr key={u.id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                <td className="px-4 py-3 text-gray-400">{i + 1}</td>
+                <td className="px-4 py-3 text-gray-400">{(page - 1) * PER_PAGE + i + 1}</td>
                 <td className="px-4 py-3 font-medium text-gray-800">{u.name}</td>
                 <td className="px-4 py-3 text-center">
                   {u.is_active
@@ -133,6 +142,7 @@ export default function UnitsPage() {
             ))}
           </tbody>
         </table>
+        <Pagination page={page} lastPage={lastPage} total={filtered.length} perPage={PER_PAGE} onChange={setPage} />
       </div>
 
       <SlideOver open={slideOpen} onClose={() => setSlideOpen(false)} title={editing ? 'Edit Unit' : 'Add Unit'}>

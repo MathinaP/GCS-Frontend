@@ -1,12 +1,14 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Pencil, Trash2, Search, ToggleLeft, ToggleRight } from 'lucide-react';
 import api from '../lib/api';
 import { type Material, type Unit } from '../types';
 import SlideOver from '../components/SlideOver';
 import ConfirmDialog from '../components/ConfirmDialog';
+import Pagination from '../components/Pagination';
 import { useToast } from '../context/ToastContext';
 
+const PER_PAGE = 10;
 const GST_RATES = [0, 5, 12, 18, 28];
 
 interface FormState {
@@ -31,6 +33,7 @@ export default function MaterialsPage() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
   const [slideOpen, setSlideOpen] = useState(false);
   const [editing, setEditing] = useState<Material | null>(null);
   const [form, setForm] = useState<FormState>(empty());
@@ -46,7 +49,7 @@ export default function MaterialsPage() {
     queryFn: () => api.get<{ data: Unit[] }>('/units').then(r => r.data.data),
   });
 
-  const materials = useMemo(() => {
+  const filtered = useMemo(() => {
     if (!data) return [];
     const q = search.toLowerCase();
     return data.filter(m =>
@@ -54,6 +57,11 @@ export default function MaterialsPage() {
       (m.hsn_code || '').toLowerCase().includes(q)
     );
   }, [data, search]);
+
+  useEffect(() => { setPage(1); }, [search]);
+
+  const lastPage = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+  const materials = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   const saveMutation = useMutation({
     mutationFn: (payload: Omit<FormState, 'default_rate' | 'gst_rate'> & { default_rate: number; gst_rate: number }) =>
@@ -144,6 +152,7 @@ export default function MaterialsPage() {
         <table className="w-full text-sm">
           <thead className="bg-brand text-white">
             <tr>
+              <th className="px-4 py-3 text-left font-medium">#</th>
               <th className="px-4 py-3 text-left font-medium">Material Name</th>
               <th className="px-4 py-3 text-left font-medium">Unit</th>
               <th className="px-4 py-3 text-left font-medium">HSN Code</th>
@@ -155,13 +164,14 @@ export default function MaterialsPage() {
           </thead>
           <tbody>
             {isLoading && (
-              <tr><td colSpan={7} className="text-center py-10 text-gray-400">Loading...</td></tr>
+              <tr><td colSpan={8} className="text-center py-10 text-gray-400">Loading...</td></tr>
             )}
             {!isLoading && materials.length === 0 && (
-              <tr><td colSpan={7} className="text-center py-10 text-gray-400">No materials found.</td></tr>
+              <tr><td colSpan={8} className="text-center py-10 text-gray-400">No materials found.</td></tr>
             )}
             {materials.map((m, i) => (
               <tr key={m.id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                <td className="px-4 py-3 text-gray-400 text-xs">{(page - 1) * PER_PAGE + i + 1}</td>
                 <td className="px-4 py-3 font-medium text-gray-800">{m.material_name}</td>
                 <td className="px-4 py-3 text-gray-600">{m.unit_of_measurement}</td>
                 <td className="px-4 py-3 text-gray-600">{m.hsn_code || '—'}</td>
@@ -189,6 +199,7 @@ export default function MaterialsPage() {
             ))}
           </tbody>
         </table>
+        <Pagination page={page} lastPage={lastPage} total={filtered.length} perPage={PER_PAGE} onChange={setPage} />
       </div>
 
       {/* SlideOver form */}

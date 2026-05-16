@@ -1,11 +1,14 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Pencil, Trash2, Search } from 'lucide-react';
 import api from '../lib/api';
 import { type Customer } from '../types';
 import SlideOver from '../components/SlideOver';
 import ConfirmDialog from '../components/ConfirmDialog';
+import Pagination from '../components/Pagination';
 import { useToast } from '../context/ToastContext';
+
+const PER_PAGE = 10;
 
 interface FormState {
   name: string;
@@ -27,6 +30,7 @@ export default function CustomersPage() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
   const [slideOpen, setSlideOpen] = useState(false);
   const [editing, setEditing] = useState<Customer | null>(null);
   const [form, setForm] = useState<FormState>(empty());
@@ -37,7 +41,7 @@ export default function CustomersPage() {
     queryFn: () => api.get<{ data: Customer[] }>('/customers').then(r => r.data.data),
   });
 
-  const customers = useMemo(() => {
+  const filtered = useMemo(() => {
     if (!data) return [];
     const q = search.toLowerCase();
     return data.filter(c =>
@@ -46,6 +50,11 @@ export default function CustomersPage() {
       (c.gstin || '').toLowerCase().includes(q)
     );
   }, [data, search]);
+
+  useEffect(() => { setPage(1); }, [search]);
+
+  const lastPage = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+  const customers = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   const saveMutation = useMutation({
     mutationFn: (payload: FormState) =>
@@ -112,6 +121,7 @@ export default function CustomersPage() {
         <table className="w-full text-sm">
           <thead className="bg-brand text-white">
             <tr>
+              <th className="px-4 py-3 text-left font-medium">#</th>
               <th className="px-4 py-3 text-left font-medium">Name</th>
               <th className="px-4 py-3 text-left font-medium">Mobile</th>
               <th className="px-4 py-3 text-left font-medium">GSTIN</th>
@@ -120,10 +130,11 @@ export default function CustomersPage() {
             </tr>
           </thead>
           <tbody>
-            {isLoading && <tr><td colSpan={5} className="text-center py-10 text-gray-400">Loading...</td></tr>}
-            {!isLoading && customers.length === 0 && <tr><td colSpan={5} className="text-center py-10 text-gray-400">No customers found.</td></tr>}
+            {isLoading && <tr><td colSpan={6} className="text-center py-10 text-gray-400">Loading...</td></tr>}
+            {!isLoading && customers.length === 0 && <tr><td colSpan={6} className="text-center py-10 text-gray-400">No customers found.</td></tr>}
             {customers.map((c, i) => (
               <tr key={c.id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                <td className="px-4 py-3 text-gray-400 text-xs">{(page - 1) * PER_PAGE + i + 1}</td>
                 <td className="px-4 py-3 font-medium text-gray-800">{c.name}</td>
                 <td className="px-4 py-3 text-gray-600">{c.mobile}</td>
                 <td className="px-4 py-3 text-gray-600">{c.gstin || '—'}</td>
@@ -138,6 +149,7 @@ export default function CustomersPage() {
             ))}
           </tbody>
         </table>
+        <Pagination page={page} lastPage={lastPage} total={filtered.length} perPage={PER_PAGE} onChange={setPage} />
       </div>
 
       <SlideOver open={slideOpen} onClose={() => setSlideOpen(false)} title={editing ? 'Edit Customer' : 'Add Customer'}>

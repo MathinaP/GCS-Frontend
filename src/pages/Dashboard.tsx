@@ -1,9 +1,21 @@
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { FileText, ClipboardList, ShoppingCart, MessageSquare, Plus } from 'lucide-react';
 import api from '../lib/api';
 import { type DashboardStats, type Document } from '../types';
 import { formatIndian } from '../lib/numberToWords';
+import Pagination from '../components/Pagination';
+
+const PER_PAGE = 10;
+
+const TYPE_FILTERS = [
+  { value: '', label: 'All' },
+  { value: 'invoice', label: 'Invoice' },
+  { value: 'proforma_invoice', label: 'Proforma' },
+  { value: 'purchase_order', label: 'P.O.' },
+  { value: 'quotation', label: 'Quotation' },
+];
 
 interface StatCardProps {
   label: string;
@@ -48,6 +60,8 @@ const TYPE_ROUTE: Record<string, string> = {
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const [typeFilter, setTypeFilter] = useState('');
+  const [page, setPage] = useState(1);
 
   const { data: stats } = useQuery<DashboardStats>({
     queryKey: ['dashboard-stats'],
@@ -56,8 +70,19 @@ export default function Dashboard() {
 
   const { data: recent } = useQuery<{ data: Document[] }>({
     queryKey: ['documents-recent'],
-    queryFn: () => api.get('/documents?per_page=10').then(r => r.data),
+    queryFn: () => api.get('/documents?per_page=100').then(r => r.data),
   });
+
+  const filtered = useMemo(() => {
+    if (!recent?.data) return [];
+    if (!typeFilter) return recent.data;
+    return recent.data.filter(d => d.type === typeFilter);
+  }, [recent, typeFilter]);
+
+  useEffect(() => { setPage(1); }, [typeFilter]);
+
+  const lastPage = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+  const docs = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   const defaultStat = { count: 0, total: 0 };
 
@@ -116,11 +141,29 @@ export default function Dashboard() {
       </div>
 
       {/* Recent documents */}
-      <h2 className="text-base font-semibold text-gray-700 mb-3">Recent Documents</h2>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-base font-semibold text-gray-700">Recent Documents</h2>
+        <div className="flex gap-1">
+          {TYPE_FILTERS.map(f => (
+            <button
+              key={f.value}
+              onClick={() => setTypeFilter(f.value)}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                typeFilter === f.value
+                  ? 'bg-brand text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-brand text-white">
             <tr>
+              <th className="px-4 py-3 text-left font-medium">#</th>
               <th className="px-4 py-3 text-left font-medium">Doc No</th>
               <th className="px-4 py-3 text-left font-medium">Type</th>
               <th className="px-4 py-3 text-left font-medium">Party</th>
@@ -131,11 +174,12 @@ export default function Dashboard() {
             </tr>
           </thead>
           <tbody>
-            {(!recent?.data || recent.data.length === 0) && (
-              <tr><td colSpan={7} className="text-center py-10 text-gray-400">No documents yet.</td></tr>
+            {docs.length === 0 && (
+              <tr><td colSpan={8} className="text-center py-10 text-gray-400">No documents found.</td></tr>
             )}
-            {recent?.data?.map((doc, i) => (
+            {docs.map((doc, i) => (
               <tr key={doc.id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                <td className="px-4 py-3 text-gray-400 text-xs">{(page - 1) * PER_PAGE + i + 1}</td>
                 <td className="px-4 py-3 font-mono text-brand font-medium">{doc.doc_number}</td>
                 <td className="px-4 py-3 text-gray-600">{TYPE_LABEL[doc.type]}</td>
                 <td className="px-4 py-3 text-gray-700">
@@ -160,6 +204,7 @@ export default function Dashboard() {
             ))}
           </tbody>
         </table>
+        <Pagination page={page} lastPage={lastPage} total={filtered.length} perPage={PER_PAGE} onChange={setPage} />
       </div>
     </div>
   );
