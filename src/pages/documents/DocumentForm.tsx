@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle, Eye, FileDown, Loader2, Plus, Save, Trash2 } from 'lucide-react';
+import { CheckCircle, Copy, Eye, FileDown, Loader2, Plus, Save, Trash2, X } from 'lucide-react';
 import api from '../../lib/api';
 import {
   type Customer,
@@ -46,6 +46,13 @@ const TYPE_ROUTE: Record<DocumentType, string> = {
   proforma_invoice: 'proforma',
   purchase_order: 'purchase-orders',
   quotation: 'quotations',
+};
+
+const DOC_TYPE_SHORT: Record<DocumentType, string> = {
+  invoice: 'Invoice',
+  proforma_invoice: 'Proforma',
+  purchase_order: 'P.O.',
+  quotation: 'Quotation',
 };
 
 const GST_LABEL_PREFIX: Record<DocumentType, string> = {
@@ -442,6 +449,10 @@ export default function DocumentForm({ type }: Props) {
   const [includeSeal, setIncludeSeal] = useState(true);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [savedStatus, setSavedStatus] = useState<DocumentStatus | null>(null);
+  const [replicateOpen, setReplicateOpen] = useState(false);
+  const [replicateType, setReplicateType] = useState<DocumentType>('proforma_invoice');
+  const [replicateDocId, setReplicateDocId] = useState<number | null>(null);
+  const [replicateSelected, setReplicateSelected] = useState<Set<number>>(new Set());
 
   const { data: customers = [] } = useQuery({
     queryKey: ['customers'],
@@ -464,6 +475,20 @@ export default function DocumentForm({ type }: Props) {
     queryFn: () => api.get(`/documents/${id}`).then(r => unwrapResource<Document>(r.data)),
     enabled: isEdit,
   });
+
+  const { data: replicateAllDocs = [] } = useQuery({
+    queryKey: ['documents-for-replicate'],
+    queryFn: () => api.get('/documents?per_page=200').then(r => r.data.data as Document[]),
+    enabled: replicateOpen,
+  });
+
+  const { data: replicateSource } = useQuery({
+    queryKey: ['document-replicate', replicateDocId],
+    queryFn: () => api.get(`/documents/${replicateDocId}`).then(r => unwrapResource<Document>(r.data)),
+    enabled: !!replicateDocId,
+  });
+
+  const replicateDocsByType = replicateAllDocs.filter(d => d.type === replicateType);
 
   useEffect(() => {
     if (!isEdit) {
@@ -521,6 +546,12 @@ export default function DocumentForm({ type }: Props) {
     })));
   }, [existingDoc]);
 
+  useEffect(() => {
+    if (replicateSource?.items) {
+      setReplicateSelected(new Set(replicateSource.items.map((_, i) => i)));
+    }
+  }, [replicateSource]);
+
   const totals = useMemo(() => {
     const subtotal = items.reduce((sum, item) => sum + item.amount, 0);
     const gstGroups: Record<number, number> = {};
@@ -571,6 +602,47 @@ export default function DocumentForm({ type }: Props) {
   function removeItem(key: number) {
     setHasUnsavedChanges(true);
     setItems(prev => prev.length > 1 ? prev.filter(item => item._key !== key) : prev);
+  }
+
+  function openReplicate() {
+    setReplicateType('proforma_invoice');
+    setReplicateDocId(null);
+    setReplicateSelected(new Set());
+    setReplicateOpen(true);
+  }
+
+  function toggleReplicateItem(index: number) {
+    setReplicateSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  }
+
+  function doReplicate() {
+    if (!replicateSource?.items?.length) return;
+    const toAdd = replicateSource.items.filter((_, i) => replicateSelected.has(i));
+    if (!toAdd.length) return;
+    setHasUnsavedChanges(true);
+    setItems(prev => [
+      ...prev,
+      ...toAdd.map(it => calcAmounts({
+        _key: ++itemKey,
+        material_id: it.material_id ?? null,
+        description: it.description,
+        hsn_sac: it.hsn_sac || '',
+        quantity: 1,
+        unit: it.unit || '',
+        rate: it.rate,
+        per: it.per || '',
+        discount_pct: 0,
+        gst_rate: selectedGst.rate,
+        amount: 0,
+        gst_amount: 0,
+      })),
+    ]);
+    setReplicateOpen(false);
   }
 
   function selectMaterial(key: number, material: Material) {
@@ -872,9 +944,14 @@ export default function DocumentForm({ type }: Props) {
             <div>
               <p className="text-xs text-gray-500">Add materials, quantity, rate and discount</p>
             </div>
-            <button type="button" onClick={addItem} className="flex w-full items-center justify-center gap-1.5 rounded-md bg-brand px-3 py-2 text-xs font-semibold text-white hover:bg-brand-dark sm:w-auto">
-              <Plus size={14} /> Add Row
-            </button>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <button type="button" onClick={addItem} className="flex w-full items-center justify-center gap-1.5 rounded-md bg-brand px-3 py-2 text-xs font-semibold text-white hover:bg-brand-dark sm:w-auto">
+                <Plus size={14} /> Add Row
+              </button>
+              <button type="button" onClick={openReplicate} className="flex w-full items-center justify-center gap-1.5 rounded-md bg-gray-100 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-200 sm:w-auto">
+                <Copy size={14} /> Import from Document
+              </button>
+            </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[960px] border-collapse text-xs">
@@ -1120,6 +1197,86 @@ export default function DocumentForm({ type }: Props) {
           </div>
         </form>
       </SlideOver>
+
+      {replicateOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setReplicateOpen(false)} />
+          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-3xl flex flex-col" style={{ maxHeight: '85vh' }}>
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+              <h3 className="font-semibold text-gray-800">Import Materials from Document</h3>
+              <button onClick={() => setReplicateOpen(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+            </div>
+            {/* Type selector */}
+            <div className="px-5 py-3 border-b border-gray-100 flex-shrink-0">
+              <p className="text-xs font-medium text-gray-500 mb-2">Source Type</p>
+              <div className="flex gap-2 flex-wrap">
+                {(['invoice', 'proforma_invoice', 'purchase_order', 'quotation'] as DocumentType[]).map(t => (
+                  <button key={t} onClick={() => { setReplicateType(t); setReplicateDocId(null); }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${replicateType === t ? 'bg-brand text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                    {DOC_TYPE_SHORT[t]}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Two-column body */}
+            <div className="flex min-h-0 flex-1 overflow-hidden">
+              {/* Left: document list */}
+              <div className="w-56 flex-shrink-0 overflow-y-auto border-r border-gray-200">
+                <div className="sticky top-0 border-b border-gray-100 bg-gray-50 px-3 py-2">
+                  <p className="text-xs font-semibold text-gray-500">Documents</p>
+                </div>
+                {replicateDocsByType.length === 0 ? (
+                  <p className="px-3 py-6 text-center text-xs text-gray-400">No documents found</p>
+                ) : replicateDocsByType.map(doc => (
+                  <button key={doc.id} onClick={() => setReplicateDocId(doc.id)}
+                    className={`w-full border-b border-gray-100 px-3 py-2.5 text-left text-xs transition-colors hover:bg-brand-light ${replicateDocId === doc.id ? 'border-l-2 border-l-brand bg-brand-light' : ''}`}>
+                    <p className="font-medium text-gray-800">{doc.doc_number}</p>
+                    <p className="truncate text-gray-500">{doc.customer?.name || doc.supplier?.name || doc.date}</p>
+                  </button>
+                ))}
+              </div>
+              {/* Right: materials checklist */}
+              <div className="flex-1 overflow-y-auto">
+                {!replicateDocId ? (
+                  <div className="flex h-full items-center justify-center text-xs text-gray-400">Select a document on the left</div>
+                ) : !replicateSource ? (
+                  <div className="flex h-full items-center justify-center text-xs text-gray-400">Loading...</div>
+                ) : (
+                  <>
+                    <div className="sticky top-0 flex items-center justify-between border-b border-gray-100 bg-gray-50 px-4 py-2">
+                      <p className="text-xs font-semibold text-gray-600">{replicateSource.items?.length ?? 0} materials</p>
+                      <div className="flex gap-3">
+                        <button onClick={() => setReplicateSelected(new Set((replicateSource.items ?? []).map((_, i) => i)))} className="text-xs font-medium text-brand hover:text-brand-dark">All</button>
+                        <button onClick={() => setReplicateSelected(new Set())} className="text-xs text-gray-500 hover:text-gray-700">None</button>
+                      </div>
+                    </div>
+                    {(replicateSource.items ?? []).map((item, i) => (
+                      <label key={i} className="flex cursor-pointer items-start gap-3 border-b border-gray-100 px-4 py-2.5 hover:bg-gray-50">
+                        <input type="checkbox" checked={replicateSelected.has(i)} onChange={() => toggleReplicateItem(i)} className="mt-0.5 h-4 w-4 flex-shrink-0 accent-brand" />
+                        <div className="min-w-0">
+                          <p className="font-medium text-gray-800 text-sm">{item.description}</p>
+                          <p className="text-xs text-gray-500">HSN: {item.hsn_sac || '—'} · {item.unit || '—'} · ₹{Number(item.rate).toLocaleString('en-IN')}</p>
+                        </div>
+                      </label>
+                    ))}
+                  </>
+                )}
+              </div>
+            </div>
+            {/* Footer */}
+            <div className="flex flex-shrink-0 items-center justify-between border-t border-gray-200 bg-gray-50 px-5 py-3">
+              <p className="text-xs text-gray-500">{replicateSelected.size > 0 ? `${replicateSelected.size} selected` : 'No selection'}</p>
+              <div className="flex gap-2">
+                <button onClick={() => setReplicateOpen(false)} className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+                <button onClick={doReplicate} disabled={replicateSelected.size === 0} className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50">
+                  Import{replicateSelected.size > 0 ? ` (${replicateSelected.size})` : ''}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {sealDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
