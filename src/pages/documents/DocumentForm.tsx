@@ -1407,7 +1407,9 @@ export default function DocumentForm({ type }: Props) {
                     const filtered: AnnexureData = {
                       filename: annexurePreview.filename,
                       headers: colIdxs.map(i => annexurePreview.headers[i]),
-                      rows: annexurePreview.rows.map(row => colIdxs.map(i => row[i])),
+                      rows: annexurePreview.rows
+                        .map(row => colIdxs.map(i => row[i]))
+                        .filter(row => row.some(cell => cell.trim() !== '')),
                     };
                     setAnnexure(filtered);
                     setHasUnsavedChanges(true);
