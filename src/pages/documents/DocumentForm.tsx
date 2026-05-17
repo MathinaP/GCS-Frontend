@@ -462,6 +462,7 @@ export default function DocumentForm({ type }: Props) {
   const [replicateSelected, setReplicateSelected] = useState<Set<number>>(new Set());
   const [annexure, setAnnexure] = useState<AnnexureData | null>(null);
   const [annexurePreview, setAnnexurePreview] = useState<AnnexureData | null>(null);
+  const [annexureSelectedCols, setAnnexureSelectedCols] = useState<Set<number>>(new Set());
   const annexureFileRef = useRef<HTMLInputElement>(null);
 
   const { data: customers = [] } = useQuery({
@@ -672,6 +673,7 @@ export default function DocumentForm({ type }: Props) {
         if (nonEmpty.length === 0) { toast('The file appears to be empty.', 'error'); return; }
         const headers = nonEmpty[0].map(c => String(c));
         const dataRows = nonEmpty.slice(1).map(r => headers.map((_, i) => String(r[i] ?? '')));
+        setAnnexureSelectedCols(new Set(headers.map((_, i) => i)));
         setAnnexurePreview({ filename: file.name, headers, rows: dataRows });
       } catch {
         toast('Could not parse the file. Please use .xlsx or .csv format.', 'error');
@@ -1056,7 +1058,7 @@ export default function DocumentForm({ type }: Props) {
           <div className="flex items-center gap-3 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm">
             <Paperclip size={15} className="flex-shrink-0 text-green-600" />
             <span className="flex-1 truncate font-medium text-green-800">{annexure.filename} — {annexure.rows.length} row{annexure.rows.length !== 1 ? 's' : ''}</span>
-            <button type="button" onClick={() => setAnnexurePreview(annexure)} className="text-xs font-semibold text-green-700 hover:text-green-900">Preview</button>
+            <button type="button" onClick={() => { setAnnexureSelectedCols(new Set(annexure.headers.map((_, i) => i))); setAnnexurePreview(annexure); }} className="text-xs font-semibold text-green-700 hover:text-green-900">Preview</button>
             <button type="button" onClick={() => { setAnnexure(null); setHasUnsavedChanges(true); }} className="text-xs font-semibold text-red-500 hover:text-red-700">Remove</button>
           </div>
         )}
@@ -1330,7 +1332,8 @@ export default function DocumentForm({ type }: Props) {
       {annexurePreview && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40" onClick={() => setAnnexurePreview(null)} />
-          <div className="relative flex w-full max-w-4xl flex-col rounded-xl bg-white shadow-2xl" style={{ maxHeight: '85vh' }}>
+          <div className="relative flex w-full max-w-4xl flex-col rounded-xl bg-white shadow-2xl" style={{ maxHeight: '90vh' }}>
+            {/* Header */}
             <div className="flex flex-shrink-0 items-center justify-between border-b border-gray-200 px-5 py-4">
               <div>
                 <h3 className="font-semibold text-gray-800">Annexure Preview</h3>
@@ -1338,36 +1341,83 @@ export default function DocumentForm({ type }: Props) {
               </div>
               <button onClick={() => setAnnexurePreview(null)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
             </div>
+            {/* Column selector */}
+            <div className="flex-shrink-0 border-b border-gray-100 bg-gray-50 px-5 py-3">
+              <div className="mb-1.5 flex items-center justify-between">
+                <p className="text-xs font-semibold text-gray-600">Select columns to include in PDF</p>
+                <div className="flex gap-3">
+                  <button onClick={() => setAnnexureSelectedCols(new Set(annexurePreview.headers.map((_, i) => i)))} className="text-xs font-medium text-brand hover:text-brand-dark">All</button>
+                  <button onClick={() => setAnnexureSelectedCols(new Set())} className="text-xs text-gray-500 hover:text-gray-700">None</button>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {annexurePreview.headers.map((h, i) => (
+                  <label key={i} className={`flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${annexureSelectedCols.has(i) ? 'border-brand bg-brand-light text-brand' : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'}`}>
+                    <input
+                      type="checkbox"
+                      className="h-3 w-3 accent-brand"
+                      checked={annexureSelectedCols.has(i)}
+                      onChange={() => setAnnexureSelectedCols(prev => {
+                        const next = new Set(prev);
+                        if (next.has(i)) next.delete(i); else next.add(i);
+                        return next;
+                      })}
+                    />
+                    {h || `Col ${i + 1}`}
+                  </label>
+                ))}
+              </div>
+            </div>
+            {/* Preview table */}
             <div className="min-h-0 flex-1 overflow-auto">
-              <table className="w-full border-collapse text-xs">
-                <thead className="sticky top-0 bg-brand text-white">
-                  <tr>
-                    <th className="border border-brand-dark px-3 py-2 text-center">#</th>
-                    {annexurePreview.headers.map((h, i) => (
-                      <th key={i} className="border border-brand-dark px-3 py-2 text-left">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {annexurePreview.rows.map((row, ri) => (
-                    <tr key={ri} className={ri % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                      <td className="border border-gray-200 px-3 py-1.5 text-center text-gray-400">{ri + 1}</td>
-                      {row.map((cell, ci) => (
-                        <td key={ci} className="border border-gray-200 px-3 py-1.5 text-gray-700">{cell}</td>
+              {annexureSelectedCols.size === 0 ? (
+                <div className="flex h-32 items-center justify-center text-xs text-gray-400">Select at least one column above</div>
+              ) : (
+                <table className="w-full border-collapse text-xs">
+                  <thead className="sticky top-0 bg-brand text-white">
+                    <tr>
+                      <th className="border border-brand-dark px-3 py-2 text-center">#</th>
+                      {annexurePreview.headers.map((h, i) => annexureSelectedCols.has(i) && (
+                        <th key={i} className="border border-brand-dark px-3 py-2 text-left">{h}</th>
                       ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {annexurePreview.rows.map((row, ri) => (
+                      <tr key={ri} className={ri % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                        <td className="border border-gray-200 px-3 py-1.5 text-center text-gray-400">{ri + 1}</td>
+                        {row.map((cell, ci) => annexureSelectedCols.has(ci) && (
+                          <td key={ci} className="border border-gray-200 px-3 py-1.5 text-gray-700">{cell}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
-            <div className="flex flex-shrink-0 items-center justify-end gap-3 border-t border-gray-200 bg-gray-50 px-5 py-3">
-              <button onClick={() => setAnnexurePreview(null)} className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
-              <button
-                onClick={() => { setAnnexure(annexurePreview); setHasUnsavedChanges(true); setAnnexurePreview(null); }}
-                className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
-              >
-                Attach Annexure
-              </button>
+            {/* Footer */}
+            <div className="flex flex-shrink-0 items-center justify-between border-t border-gray-200 bg-gray-50 px-5 py-3">
+              <p className="text-xs text-gray-500">{annexureSelectedCols.size} of {annexurePreview.headers.length} columns selected</p>
+              <div className="flex gap-3">
+                <button onClick={() => setAnnexurePreview(null)} className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+                <button
+                  disabled={annexureSelectedCols.size === 0}
+                  onClick={() => {
+                    const colIdxs = Array.from(annexureSelectedCols).sort((a, b) => a - b);
+                    const filtered: AnnexureData = {
+                      filename: annexurePreview.filename,
+                      headers: colIdxs.map(i => annexurePreview.headers[i]),
+                      rows: annexurePreview.rows.map(row => colIdxs.map(i => row[i])),
+                    };
+                    setAnnexure(filtered);
+                    setHasUnsavedChanges(true);
+                    setAnnexurePreview(null);
+                  }}
+                  className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50"
+                >
+                  Attach Annexure
+                </button>
+              </div>
             </div>
           </div>
         </div>
