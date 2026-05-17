@@ -709,6 +709,19 @@ export default function DocumentForm({ type }: Props) {
     setQuickCreate({ type: 'material', itemKey: itemKeyValue });
   }
 
+  function validateBeforeSave(): boolean {
+    if (!header.doc_number.trim()) {
+      toast('Document number is required. Wait for it to load or enter one manually.', 'error');
+      return false;
+    }
+    const emptyDescIdx = items.findIndex(it => !it.description.trim());
+    if (emptyDescIdx !== -1) {
+      toast(`Row ${emptyDescIdx + 1}: Description is required.`, 'error');
+      return false;
+    }
+    return true;
+  }
+
   const saveMutation = useMutation({
     mutationFn: async (status: DocumentStatus) => {
       const payload = {
@@ -772,7 +785,13 @@ export default function DocumentForm({ type }: Props) {
       if (!isEdit) navigate(`/${route}/${doc.id}`);
     },
     onError: (error: any) => {
-      toast(error?.response?.data?.message || 'Save failed.', 'error');
+      const errors = error?.response?.data?.errors as Record<string, string[]> | undefined;
+      if (errors) {
+        const msgs = Object.values(errors).flat();
+        msgs.forEach(m => toast(m, 'error'));
+      } else {
+        toast(error?.response?.data?.message || 'Save failed.', 'error');
+      }
     },
   });
 
@@ -1127,10 +1146,10 @@ export default function DocumentForm({ type }: Props) {
         </section>
 
         <div className="flex flex-col gap-3 no-print sm:flex-row sm:flex-wrap">
-          <button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate('draft')} className="flex w-full items-center justify-center gap-2 rounded-lg bg-gray-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 sm:w-auto">
+          <button type="button" disabled={saveMutation.isPending} onClick={() => validateBeforeSave() && saveMutation.mutate('draft')} className="flex w-full items-center justify-center gap-2 rounded-lg bg-gray-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 sm:w-auto">
             <Save size={16} /> {saveMutation.isPending ? 'Saving...' : 'Save Draft'}
           </button>
-          <button type="button" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate('confirmed')} className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50 sm:w-auto">
+          <button type="button" disabled={saveMutation.isPending} onClick={() => validateBeforeSave() && saveMutation.mutate('confirmed')} className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50 sm:w-auto">
             <CheckCircle size={16} /> Confirm
           </button>
           {isEdit && (
