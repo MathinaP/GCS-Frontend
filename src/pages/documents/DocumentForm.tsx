@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle, Copy, Eye, FileDown, Loader2, Plus, Save, Trash2, X } from 'lucide-react';
+import { CheckCircle, Copy, Eye, FileDown, Loader2, Paperclip, Plus, Save, Trash2, X } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import api from '../../lib/api';
 import {
   type Customer,
@@ -141,6 +142,12 @@ interface MaterialForm {
   hsn_code: string;
   default_rate: string;
   gst_rate: string;
+}
+
+interface AnnexureData {
+  filename: string;
+  headers: string[];
+  rows: string[][];
 }
 
 function emptyHeader(): Header {
@@ -453,6 +460,9 @@ export default function DocumentForm({ type }: Props) {
   const [replicateType, setReplicateType] = useState<DocumentType>('proforma_invoice');
   const [replicateDocId, setReplicateDocId] = useState<number | null>(null);
   const [replicateSelected, setReplicateSelected] = useState<Set<number>>(new Set());
+  const [annexure, setAnnexure] = useState<AnnexureData | null>(null);
+  const [annexurePreview, setAnnexurePreview] = useState<AnnexureData | null>(null);
+  const annexureFileRef = useRef<HTMLInputElement>(null);
 
   const { data: customers = [] } = useQuery({
     queryKey: ['customers'],
@@ -526,6 +536,7 @@ export default function DocumentForm({ type }: Props) {
     setConsignee(existingDoc.consignee ?? null);
     setSupplier(existingDoc.supplier ?? null);
     setSavedStatus(existingDoc.status);
+    setAnnexure(existingDoc.annexure_items ?? null);
     setHasUnsavedChanges(false);
     const optionKey = optionFromDocument(existingDoc);
     const option = GST_OPTIONS.find(o => o.key === optionKey) ?? GST_OPTIONS[1];
@@ -645,6 +656,30 @@ export default function DocumentForm({ type }: Props) {
     setReplicateOpen(false);
   }
 
+  function handleAnnexureFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!e.target) return;
+    e.target.value = '';
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const data = new Uint8Array(ev.target!.result as ArrayBuffer);
+        const wb = XLSX.read(data, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows: string[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' }) as string[][];
+        const nonEmpty = rows.filter(r => r.some(c => String(c).trim() !== ''));
+        if (nonEmpty.length === 0) { toast('The file appears to be empty.', 'error'); return; }
+        const headers = nonEmpty[0].map(c => String(c));
+        const dataRows = nonEmpty.slice(1).map(r => headers.map((_, i) => String(r[i] ?? '')));
+        setAnnexurePreview({ filename: file.name, headers, rows: dataRows });
+      } catch {
+        toast('Could not parse the file. Please use .xlsx or .csv format.', 'error');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
   function selectMaterial(key: number, material: Material) {
     updateItem(key, {
       material_id: material.id,
@@ -700,6 +735,7 @@ export default function DocumentForm({ type }: Props) {
         pr_no: header.pr_no || null,
         quotation_validity: header.quotation_validity || null,
         notes: header.notes || null,
+        annexure_items: annexure ?? null,
         subtotal: totals.subtotal,
         cgst_amount: totals.cgst,
         sgst_amount: totals.sgst,
@@ -951,6 +987,10 @@ export default function DocumentForm({ type }: Props) {
               <button type="button" onClick={openReplicate} className="flex w-full items-center justify-center gap-1.5 rounded-md bg-gray-100 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-200 sm:w-auto">
                 <Copy size={14} /> Import from Document
               </button>
+              <button type="button" onClick={() => annexureFileRef.current?.click()} className="flex w-full items-center justify-center gap-1.5 rounded-md bg-gray-100 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-200 sm:w-auto">
+                <Paperclip size={14} /> Add Annexure
+              </button>
+              <input ref={annexureFileRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleAnnexureFile} />
             </div>
           </div>
           <div className="overflow-x-auto">
@@ -1011,6 +1051,15 @@ export default function DocumentForm({ type }: Props) {
             </table>
           </div>
         </section>
+
+        {annexure && (
+          <div className="flex items-center gap-3 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm">
+            <Paperclip size={15} className="flex-shrink-0 text-green-600" />
+            <span className="flex-1 truncate font-medium text-green-800">{annexure.filename} — {annexure.rows.length} row{annexure.rows.length !== 1 ? 's' : ''}</span>
+            <button type="button" onClick={() => setAnnexurePreview(annexure)} className="text-xs font-semibold text-green-700 hover:text-green-900">Preview</button>
+            <button type="button" onClick={() => { setAnnexure(null); setHasUnsavedChanges(true); }} className="text-xs font-semibold text-red-500 hover:text-red-700">Remove</button>
+          </div>
+        )}
 
         <section className="rounded-md border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
           <h2 className="text-sm font-bold text-gray-800">GST Percentage</h2>
@@ -1273,6 +1322,52 @@ export default function DocumentForm({ type }: Props) {
                   Import{replicateSelected.size > 0 ? ` (${replicateSelected.size})` : ''}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {annexurePreview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setAnnexurePreview(null)} />
+          <div className="relative flex w-full max-w-4xl flex-col rounded-xl bg-white shadow-2xl" style={{ maxHeight: '85vh' }}>
+            <div className="flex flex-shrink-0 items-center justify-between border-b border-gray-200 px-5 py-4">
+              <div>
+                <h3 className="font-semibold text-gray-800">Annexure Preview</h3>
+                <p className="text-xs text-gray-500">{annexurePreview.filename} · {annexurePreview.rows.length} rows · {annexurePreview.headers.length} columns</p>
+              </div>
+              <button onClick={() => setAnnexurePreview(null)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-auto">
+              <table className="w-full border-collapse text-xs">
+                <thead className="sticky top-0 bg-brand text-white">
+                  <tr>
+                    <th className="border border-brand-dark px-3 py-2 text-center">#</th>
+                    {annexurePreview.headers.map((h, i) => (
+                      <th key={i} className="border border-brand-dark px-3 py-2 text-left">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {annexurePreview.rows.map((row, ri) => (
+                    <tr key={ri} className={ri % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                      <td className="border border-gray-200 px-3 py-1.5 text-center text-gray-400">{ri + 1}</td>
+                      {row.map((cell, ci) => (
+                        <td key={ci} className="border border-gray-200 px-3 py-1.5 text-gray-700">{cell}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="flex flex-shrink-0 items-center justify-end gap-3 border-t border-gray-200 bg-gray-50 px-5 py-3">
+              <button onClick={() => setAnnexurePreview(null)} className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+              <button
+                onClick={() => { setAnnexure(annexurePreview); setHasUnsavedChanges(true); setAnnexurePreview(null); }}
+                className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
+              >
+                Attach Annexure
+              </button>
             </div>
           </div>
         </div>

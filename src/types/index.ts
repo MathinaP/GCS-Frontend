@@ -94,6 +94,7 @@ export interface Document {
   round_off: number | null;
   grand_total: number;
   notes: string | null;
+  annexure_items?: { filename: string; headers: string[]; rows: string[][] } | null;
   customer?: Customer;
   consignee?: Customer;
   supplier?: Supplier;
