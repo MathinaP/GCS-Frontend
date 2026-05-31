@@ -108,6 +108,7 @@ export default function ServiceReportFormPage() {
   });
   const [params, setParams] = useState<ParamsState>(emptyParams());
   const [mailModal, setMailModal] = useState(false);
+  const [mailEmail, setMailEmail] = useState('');
   const [hmrError, setHmrError] = useState('');
 
   const { data: report, isLoading } = useQuery({
@@ -156,7 +157,7 @@ export default function ServiceReportFormPage() {
     setParams(p => ({ ...p, [key]: { ...p[key], [field]: val } }));
 
   const saveMutation = useMutation({
-    mutationFn: (showMail: boolean) => {
+    mutationFn: (_?: boolean) => {
       const payload = {
         ...form,
         load_hmr: form.load_hmr || null,
@@ -170,17 +171,13 @@ export default function ServiceReportFormPage() {
         status: 'completed',
         parameters: params,
       };
-      return api.put(`/service-reports/${id}`, payload).then(r => ({ data: r.data, showMail }));
+      return api.put(`/service-reports/${id}`, payload).then(r => r.data);
     },
-    onSuccess: ({ showMail }) => {
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['service-reports'] });
       qc.invalidateQueries({ queryKey: ['service-report', id] });
       setHmrError('');
-      if (showMail) {
-        setMailModal(true);
-      } else {
-        toast('Report saved.');
-      }
+      toast('Report saved.');
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.errors?.total_hmr?.[0] || 'Save failed.';
@@ -190,10 +187,11 @@ export default function ServiceReportFormPage() {
   });
 
   const mailMutation = useMutation({
-    mutationFn: () => api.post(`/service-reports/${id}/send-mail`).then(r => r.data),
+    mutationFn: (email: string) => api.post(`/service-reports/${id}/send-mail`, { email }).then(r => r.data),
     onSuccess: (data) => {
       toast(data.message || 'Report sent.');
       setMailModal(false);
+      downloadPdf();
     },
     onError: (err: any) => toast(err?.response?.data?.message || 'Mail failed.', 'error'),
   });
@@ -218,15 +216,16 @@ export default function ServiceReportFormPage() {
         </div>
         <div className="flex gap-2">
           <button onClick={downloadPdf} className="flex items-center gap-2 border border-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-sm hover:bg-gray-50">
-            <FileDown size={15} /> PDF
+            <FileDown size={15} /> Download PDF
           </button>
           <button onClick={() => saveMutation.mutate(false)} disabled={saveMutation.isPending}
             className="flex items-center gap-2 border border-brand text-brand px-3 py-1.5 rounded-lg text-sm hover:bg-brand-light disabled:opacity-50">
             <Save size={15} /> {saveMutation.isPending ? 'Saving...' : 'Save'}
           </button>
-          <button onClick={() => saveMutation.mutate(true)} disabled={saveMutation.isPending}
-            className="flex items-center gap-2 bg-brand text-white px-4 py-1.5 rounded-lg text-sm hover:bg-brand-dark disabled:opacity-50">
-            <Send size={15} /> Save & Send
+          <button
+            onClick={() => { setMailEmail(form.site_person_mail); setMailModal(true); }}
+            className="flex items-center gap-2 bg-brand text-white px-4 py-1.5 rounded-lg text-sm hover:bg-brand-dark">
+            <Send size={15} /> Send
           </button>
         </div>
       </div>
@@ -395,30 +394,34 @@ export default function ServiceReportFormPage() {
         </section>
       </div>
 
-      {/* Mail Confirmation Modal */}
+      {/* Send Mail Modal */}
       {mailModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/30" onClick={() => setMailModal(false)} />
           <div className="relative bg-white rounded-xl shadow-xl p-6 max-w-sm w-full mx-4">
-            <h3 className="font-semibold text-gray-800 mb-2">Report saved!</h3>
-            <p className="text-sm text-gray-600 mb-1">Do you want to send this report by email?</p>
-            {form.site_person_mail && (
-              <p className="text-sm font-medium text-brand mb-4">{form.site_person_mail}</p>
-            )}
-            {!form.site_person_mail && (
-              <p className="text-xs text-amber-600 mb-4">No email address on this report.</p>
-            )}
+            <h3 className="font-semibold text-gray-800 mb-1">Send Service Report</h3>
+            <p className="text-xs text-gray-500 mb-4">The PDF will be sent to the email below and also downloaded to your device.</p>
+            <div className="mb-4">
+              <label className="block text-xs font-medium text-gray-600 mb-1">Send To</label>
+              <input
+                type="email"
+                value={mailEmail}
+                onChange={e => setMailEmail(e.target.value)}
+                placeholder="Enter email address"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+              />
+            </div>
             <div className="flex gap-3">
               <button
-                onClick={() => mailMutation.mutate()}
-                disabled={!form.site_person_mail || mailMutation.isPending}
+                onClick={() => mailMutation.mutate(mailEmail)}
+                disabled={!mailEmail.trim() || mailMutation.isPending}
                 className="flex-1 bg-brand text-white py-2 rounded-lg text-sm font-medium hover:bg-brand-dark disabled:opacity-50"
               >
-                {mailMutation.isPending ? 'Sending...' : 'Generate & Send'}
+                {mailMutation.isPending ? 'Sending...' : 'Send & Download'}
               </button>
-              <button onClick={() => { setMailModal(false); toast('Report saved.'); }}
+              <button onClick={() => setMailModal(false)}
                 className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg text-sm font-medium hover:bg-gray-200">
-                No, Skip
+                Cancel
               </button>
             </div>
           </div>
