@@ -26,6 +26,30 @@ export interface Customer {
   state_code: string | null;
 }
 
+export interface CustomerAsset {
+  id: number;
+  customer_id: number;
+  customer?: { id: number; name: string };
+  fabrication_number: string;
+  compressor_model: string;
+  service_dealer: string;
+  product: string;
+  compressor_make: string;
+  service_engineer: string | null;
+  contact_person_name: string | null;
+  contact_person_mail: string | null;
+  contact_person_number: string | null;
+  alternate_person_name: string | null;
+  alternate_person_mail: string | null;
+  alternate_person_number: string | null;
+  hours_meter_reading: string | null;
+  hmr_date: string | null;
+  amc: boolean;
+  amc_start_date: string | null;
+  amc_end_date: string | null;
+  is_active: boolean;
+}
+
 export interface Supplier {
   id: number;
   name: string;

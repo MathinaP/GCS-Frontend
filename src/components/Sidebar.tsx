@@ -7,6 +7,7 @@ import {
   ShoppingCart,
   MessageSquare,
   Users,
+  HardDrive,
   Truck,
   Package,
   ListOrdered,
@@ -42,6 +43,7 @@ const sections: NavSection[] = [
     title: 'MASTERS',
     items: [
       { to: '/customers', label: 'Customers', icon: <Users size={18} /> },
+      { to: '/customer-assets', label: 'Customer Assets', icon: <HardDrive size={18} /> },
       { to: '/suppliers', label: 'Suppliers', icon: <Truck size={18} /> },
       { to: '/materials', label: 'Materials', icon: <Package size={18} /> },
       { to: '/document-counters', label: 'Document Counters', icon: <ListOrdered size={18} /> },

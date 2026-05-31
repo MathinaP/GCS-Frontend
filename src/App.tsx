@@ -10,6 +10,7 @@ import UnitsPage from './pages/UnitsPage';
 import CustomersPage from './pages/CustomersPage';
 import DocumentCountersPage from './pages/DocumentCountersPage';
 import SuppliersPage from './pages/SuppliersPage';
+import CustomerAssetsPage from './pages/CustomerAssetsPage';
 import DocumentListPage from './pages/documents/DocumentListPage';
 import DocumentFormPage from './pages/documents/DocumentFormPage';
 
@@ -82,6 +83,7 @@ export default function App() {
 
                 {/* Masters */}
                 <Route path="customers" element={<CustomersPage />} />
+                <Route path="customer-assets" element={<CustomerAssetsPage />} />
                 <Route path="suppliers" element={<SuppliersPage />} />
                 <Route path="materials" element={<MaterialsPage />} />
                 <Route path="document-counters" element={<DocumentCountersPage />} />
