@@ -11,6 +11,8 @@ import CustomersPage from './pages/CustomersPage';
 import DocumentCountersPage from './pages/DocumentCountersPage';
 import SuppliersPage from './pages/SuppliersPage';
 import CustomerAssetsPage from './pages/CustomerAssetsPage';
+import ServiceReportsPage from './pages/ServiceReportsPage';
+import ServiceReportFormPage from './pages/ServiceReportFormPage';
 import DocumentListPage from './pages/documents/DocumentListPage';
 import DocumentFormPage from './pages/documents/DocumentFormPage';
 
@@ -80,6 +82,10 @@ export default function App() {
                 <Route path="quotations"     element={<DocumentListPage type="quotation" />} />
                 <Route path="quotations/new" element={<DocumentFormPage type="quotation" />} />
                 <Route path="quotations/:id" element={<DocumentFormPage type="quotation" />} />
+
+                {/* Service Reports */}
+                <Route path="service-reports" element={<ServiceReportsPage />} />
+                <Route path="service-reports/:id" element={<ServiceReportFormPage />} />
 
                 {/* Masters */}
                 <Route path="customers" element={<CustomersPage />} />

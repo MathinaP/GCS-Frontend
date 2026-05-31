@@ -13,6 +13,7 @@ import {
   ListOrdered,
   Ruler,
   LogOut,
+  Wrench,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ConfirmDialog from './ConfirmDialog';
@@ -37,6 +38,12 @@ const sections: NavSection[] = [
     title: 'PURCHASE',
     items: [
       { to: '/purchase-orders', label: 'Purchase Order', icon: <ShoppingCart size={18} /> },
+    ],
+  },
+  {
+    title: 'SERVICE',
+    items: [
+      { to: '/service-reports', label: 'Service Reports', icon: <Wrench size={18} /> },
     ],
   },
   {

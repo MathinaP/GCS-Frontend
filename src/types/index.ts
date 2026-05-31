@@ -140,6 +140,44 @@ export interface DocumentCounter {
   financial_year: string;
 }
 
+export interface ServiceReport {
+  id: number;
+  report_number: string;
+  report_date: string | null;
+  service_type: string;
+  status: 'draft' | 'completed';
+  customer_id: number | null;
+  customer_asset_id: number | null;
+  company_name: string | null;
+  fabrication_number: string | null;
+  compressor_model: string | null;
+  site_location: string | null;
+  site_person_name: string | null;
+  site_person_number: string | null;
+  site_person_mail: string | null;
+  amc_status: string | null;
+  amc_registration_no: string | null;
+  amc_visit_no: string | null;
+  next_service_due_on: string | null;
+  load_hmr: string | null;
+  unload_hmr: string | null;
+  total_hmr: string | null;
+  dealer: string | null;
+  parameters: Record<string, { actual?: string; response?: string }> | null;
+  no_of_visits: number | null;
+  service_charges_applicable: boolean;
+  service_charges: string | null;
+  parts_recommended: string | null;
+  work_done: string | null;
+  engineer: string | null;
+  engineer_contact: string | null;
+  customer_feedback: string | null;
+  customer_feedback_percentage: number | null;
+  customer_feedback_remarks: string | null;
+  engineer_remarks: string | null;
+  signature: string | null;
+}
+
 export interface Paginated<T> {
   data: T[];
   meta: {
