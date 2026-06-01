@@ -197,7 +197,14 @@ export default function ServiceReportFormPage() {
   });
 
   function downloadPdf() {
-    window.open(`${import.meta.env.VITE_API_BASE_URL ?? '/api'}/service-reports/${id}/pdf`, '_blank');
+    api.get(`/service-reports/${id}/pdf`, { responseType: 'blob' }).then(res => {
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${report?.report_number?.replace(/\//g, '-') ?? 'report'}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
   }
 
   if (isLoading) return <div className="py-20 text-center text-gray-400 text-sm">Loading...</div>;

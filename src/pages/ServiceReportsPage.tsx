@@ -86,7 +86,14 @@ export default function ServiceReportsPage() {
   });
 
   function handleDownloadPdf(r: ServiceReport) {
-    window.open(`${import.meta.env.VITE_API_BASE_URL ?? '/api'}/service-reports/${r.id}/pdf`, '_blank');
+    api.get(`/service-reports/${r.id}/pdf`, { responseType: 'blob' }).then(res => {
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${r.report_number.replace(/\//g, '-')}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
   }
 
   const statusBadge = (s: string) => s === 'completed'
