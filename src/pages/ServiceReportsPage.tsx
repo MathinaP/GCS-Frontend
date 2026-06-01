@@ -184,7 +184,7 @@ export default function ServiceReportsPage() {
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand disabled:bg-gray-100">
                   <option value="">— Select Fab. Number —</option>
                   {filteredAssets.map(a => (
-                    <option key={a.id} value={a.id}>{a.fabrication_number} — {a.compressor_model}</option>
+                    <option key={a.id} value={a.id}>{a.fabrication_number}</option>
                   ))}
                 </select>
                 {selCustomer && filteredAssets.length === 0 && (
