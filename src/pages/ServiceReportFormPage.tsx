@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, FileDown, Save, Send } from 'lucide-react';
+import { ArrowLeft, FileDown, Save, Send, Trash2 } from 'lucide-react';
 import api from '../lib/api';
 import { type ServiceReport } from '../types';
 import SignaturePad, { type SignaturePadHandle } from '../components/SignaturePad';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { useToast } from '../context/ToastContext';
 
 const INPUT = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand';
@@ -110,6 +111,7 @@ export default function ServiceReportFormPage() {
   const [mailModal, setMailModal] = useState(false);
   const [mailEmail, setMailEmail] = useState('');
   const [hmrError, setHmrError] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
 
   const { data: report, isLoading } = useQuery({
     queryKey: ['service-report', id],
@@ -186,6 +188,16 @@ export default function ServiceReportFormPage() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: () => api.delete(`/service-reports/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['service-reports'] });
+      toast('Report deleted.');
+      navigate('/service-reports');
+    },
+    onError: () => toast('Delete failed.', 'error'),
+  });
+
   const mailMutation = useMutation({
     mutationFn: (email: string) => api.post(`/service-reports/${id}/send-mail`, { email }).then(r => r.data),
     onSuccess: (data) => {
@@ -222,6 +234,10 @@ export default function ServiceReportFormPage() {
           </div>
         </div>
         <div className="flex gap-2">
+          <button onClick={() => setDeleteConfirm(true)}
+            className="flex items-center gap-2 border border-red-300 text-red-600 px-3 py-1.5 rounded-lg text-sm hover:bg-red-50">
+            <Trash2 size={15} /> Delete
+          </button>
           <button onClick={downloadPdf} className="flex items-center gap-2 border border-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-sm hover:bg-gray-50">
             <FileDown size={15} /> Download PDF
           </button>
@@ -434,6 +450,16 @@ export default function ServiceReportFormPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleteConfirm}
+        message="Delete this service report? This cannot be undone."
+        onConfirm={() => deleteMutation.mutate()}
+        onCancel={() => setDeleteConfirm(false)}
+        loading={deleteMutation.isPending}
+        confirmLabel="Delete"
+        loadingLabel="Deleting..."
+      />
     </div>
   );
 }

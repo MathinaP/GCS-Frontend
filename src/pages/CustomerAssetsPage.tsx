@@ -1,8 +1,9 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Pencil, Trash2, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, ChevronDown, ChevronRight, FileText } from 'lucide-react';
 import api from '../lib/api';
-import { type CustomerAsset, type Customer } from '../types';
+import { type CustomerAsset, type Customer, type ServiceReport } from '../types';
 import SlideOver from '../components/SlideOver';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Pagination from '../components/Pagination';
@@ -57,11 +58,57 @@ const empty = (): FormState => ({
 const INPUT = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand';
 const LABEL = 'block text-xs font-medium text-gray-600 mb-1';
 
+function AssetReports({ fabricationNumber }: { fabricationNumber: string }) {
+  const navigate = useNavigate();
+  const { data, isLoading } = useQuery({
+    queryKey: ['asset-reports', fabricationNumber],
+    queryFn: () => api.get<{ data: ServiceReport[] }>(`/service-reports?fab=${encodeURIComponent(fabricationNumber)}`).then(r => r.data.data),
+  });
+
+  if (isLoading) return <div className="px-4 py-2 text-xs text-gray-400">Loading reports...</div>;
+  if (!data || data.length === 0) return <div className="px-4 py-2 text-xs text-gray-400">No service reports found.</div>;
+
+  return (
+    <table className="w-full text-xs">
+      <thead>
+        <tr className="bg-gray-100 text-gray-600">
+          <th className="px-4 py-2 text-left font-medium">Report No</th>
+          <th className="px-4 py-2 text-left font-medium">Type</th>
+          <th className="px-4 py-2 text-left font-medium">Date</th>
+          <th className="px-4 py-2 text-left font-medium">Status</th>
+          <th className="px-4 py-2 text-center font-medium">Open</th>
+        </tr>
+      </thead>
+      <tbody>
+        {data.map(r => (
+          <tr key={r.id} className="border-t border-gray-100 hover:bg-gray-50">
+            <td className="px-4 py-2 font-medium text-brand">{r.report_number}</td>
+            <td className="px-4 py-2 text-gray-600">{r.service_type}</td>
+            <td className="px-4 py-2 text-gray-600">{r.report_date || '—'}</td>
+            <td className="px-4 py-2">
+              {r.status === 'completed'
+                ? <span className="px-2 py-0.5 rounded bg-green-100 text-green-700 font-medium">Completed</span>
+                : <span className="px-2 py-0.5 rounded bg-yellow-100 text-yellow-700 font-medium">Draft</span>}
+            </td>
+            <td className="px-4 py-2 text-center">
+              <button onClick={() => navigate(`/service-reports/${r.id}`)} className="text-brand hover:text-brand-dark">
+                <FileText size={14} />
+              </button>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
 export default function CustomerAssetsPage() {
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
   const [slideOpen, setSlideOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [editing, setEditing] = useState<CustomerAsset | null>(null);
@@ -214,29 +261,53 @@ export default function CustomerAssetsPage() {
             {!isLoading && assets.length === 0 && (
               <tr><td colSpan={7} className="text-center py-10 text-gray-400">No assets found.</td></tr>
             )}
-            {assets.map((a, i) => (
-              <tr key={a.id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                <td className="px-4 py-3 text-gray-400 text-xs">{(page - 1) * PER_PAGE + i + 1}</td>
-                <td className="px-4 py-3">
-                  <button
-                    onClick={() => openDetail(a)}
-                    className="font-medium text-brand hover:text-brand-dark hover:underline"
-                  >
-                    {a.fabrication_number}
-                  </button>
-                </td>
-                <td className="px-4 py-3 text-gray-600">{a.compressor_model}</td>
-                <td className="px-4 py-3 text-gray-600">{a.service_dealer}</td>
-                <td className="px-4 py-3 text-gray-600">{a.compressor_make}</td>
-                <td className="px-4 py-3 text-gray-600">{a.contact_person_number || '—'}</td>
-                <td className="px-4 py-3 text-center">
-                  <div className="flex items-center justify-center gap-2">
-                    <button onClick={() => openEdit(a)} className="text-brand hover:text-brand-dark"><Pencil size={15} /></button>
-                    <button onClick={() => setDeactivateId(a.id)} className="text-brand hover:text-brand-dark"><Trash2 size={15} /></button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+            {assets.map((a, i) => {
+              const isExpanded = expandedId === a.id;
+              return (
+                <>
+                  <tr key={a.id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                    <td className="px-4 py-3 text-gray-400 text-xs">{(page - 1) * PER_PAGE + i + 1}</td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => openDetail(a)}
+                        className="font-medium text-brand hover:text-brand-dark hover:underline"
+                      >
+                        {a.fabrication_number}
+                      </button>
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">{a.compressor_model}</td>
+                    <td className="px-4 py-3 text-gray-600">{a.service_dealer}</td>
+                    <td className="px-4 py-3 text-gray-600">{a.compressor_make}</td>
+                    <td className="px-4 py-3 text-gray-600">{a.contact_person_number || '—'}</td>
+                    <td className="px-4 py-3 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => setExpandedId(isExpanded ? null : a.id)}
+                          className="text-gray-400 hover:text-brand"
+                          title="Service Reports"
+                        >
+                          {isExpanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+                        </button>
+                        <button onClick={() => openEdit(a)} className="text-brand hover:text-brand-dark"><Pencil size={15} /></button>
+                        <button onClick={() => setDeactivateId(a.id)} className="text-brand hover:text-brand-dark"><Trash2 size={15} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                  {isExpanded && (
+                    <tr key={`${a.id}-reports`} className="bg-blue-50 border-t border-blue-100">
+                      <td colSpan={7} className="p-0">
+                        <div className="px-6 py-2">
+                          <p className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">
+                            Service Reports — {a.fabrication_number}
+                          </p>
+                          <AssetReports fabricationNumber={a.fabrication_number} />
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </>
+              );
+            })}
           </tbody>
         </table>
         <Pagination page={page} lastPage={lastPage} total={filtered.length} perPage={PER_PAGE} onChange={setPage} />
