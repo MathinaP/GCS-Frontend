@@ -103,7 +103,6 @@ function AssetReports({ fabricationNumber }: { fabricationNumber: string }) {
 }
 
 export default function CustomerAssetsPage() {
-  const navigate = useNavigate();
   const qc = useQueryClient();
   const { toast } = useToast();
   const [search, setSearch] = useState('');
