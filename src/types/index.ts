@@ -196,10 +196,11 @@ export interface ProfitSummary {
   from: string;
   to: string;
   revenue: number;
+  po_costs: number;
   expenses: number;
   profit: number;
   by_category: { category: ExpenseCategory; total: number }[];
-  monthly: { month: string; revenue: number; expenses: number; profit: number }[];
+  monthly: { month: string; revenue: number; po_costs: number; expenses: number; profit: number }[];
 }
 
 export interface Paginated<T> {
