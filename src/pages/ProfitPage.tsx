@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { TrendingUp, TrendingDown, Wallet, ShoppingCart, Receipt } from 'lucide-react';
+import { TrendingUp, Wallet, ShoppingCart, Receipt } from 'lucide-react';
 import api from '../lib/api';
 import { type ProfitSummary, type ExpenseCategory } from '../types';
 
