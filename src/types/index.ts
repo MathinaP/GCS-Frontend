@@ -178,6 +178,30 @@ export interface ServiceReport {
   signature: string | null;
 }
 
+export type ExpenseCategory =
+  | 'fuel_travel' | 'salary' | 'rent_utilities'
+  | 'tools_equipment' | 'material' | 'food' | 'other';
+
+export interface Expense {
+  id: number;
+  date: string;
+  category: ExpenseCategory;
+  description: string;
+  amount: string;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface ProfitSummary {
+  from: string;
+  to: string;
+  revenue: number;
+  expenses: number;
+  profit: number;
+  by_category: { category: ExpenseCategory; total: number }[];
+  monthly: { month: string; revenue: number; expenses: number; profit: number }[];
+}
+
 export interface Paginated<T> {
   data: T[];
   meta: {

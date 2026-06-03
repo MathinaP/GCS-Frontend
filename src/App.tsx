@@ -15,6 +15,8 @@ import ServiceReportsPage from './pages/ServiceReportsPage';
 import ServiceReportFormPage from './pages/ServiceReportFormPage';
 import DocumentListPage from './pages/documents/DocumentListPage';
 import DocumentFormPage from './pages/documents/DocumentFormPage';
+import ExpensesPage from './pages/ExpensesPage';
+import ProfitPage from './pages/ProfitPage';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
@@ -86,6 +88,10 @@ export default function App() {
                 {/* Service Reports */}
                 <Route path="service-reports" element={<ServiceReportsPage />} />
                 <Route path="service-reports/:id" element={<ServiceReportFormPage />} />
+
+                {/* Accounts */}
+                <Route path="expenses" element={<ExpensesPage />} />
+                <Route path="profit"   element={<ProfitPage />} />
 
                 {/* Masters */}
                 <Route path="customers" element={<CustomersPage />} />

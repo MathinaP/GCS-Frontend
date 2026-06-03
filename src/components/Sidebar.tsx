@@ -14,6 +14,8 @@ import {
   Ruler,
   LogOut,
   Wrench,
+  Receipt,
+  TrendingUp,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ConfirmDialog from './ConfirmDialog';
@@ -44,6 +46,13 @@ const sections: NavSection[] = [
     title: 'SERVICE',
     items: [
       { to: '/service-reports', label: 'Service Reports', icon: <Wrench size={18} /> },
+    ],
+  },
+  {
+    title: 'ACCOUNTS',
+    items: [
+      { to: '/expenses', label: 'Expenses',   icon: <Receipt   size={18} /> },
+      { to: '/profit',   label: 'Profit & Loss', icon: <TrendingUp size={18} /> },
     ],
   },
   {
