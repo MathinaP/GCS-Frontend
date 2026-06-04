@@ -77,10 +77,13 @@ export default function MaterialsPage() {
     onError: (err: any) => {
       const errors = err?.response?.data?.errors;
       if (errors?.material_name) {
-        setNameError('Material name already exists.');
-        toast('Material name already exists.', 'error');
+        setNameError(errors.material_name[0]);
+        toast(errors.material_name[0], 'error');
+      } else if (errors) {
+        const first = Object.values(errors)[0] as string[];
+        toast(first[0] ?? 'Validation error.', 'error');
       } else {
-        toast(err?.response?.data?.message || 'Save failed.', 'error');
+        toast(err?.response?.data?.message ?? err?.message ?? 'Save failed.', 'error');
       }
     },
   });
