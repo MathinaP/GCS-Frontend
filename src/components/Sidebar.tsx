@@ -73,6 +73,10 @@ export default function Sidebar() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [loggingOut,  setLoggingOut]  = useState(false);
 
+  const visibleSections = sections.filter(s =>
+    !(s.title === 'ACCOUNTS' && user?.role !== 'super_admin')
+  );
+
   async function handleLogout() {
     setLoggingOut(true);
     await logout();
@@ -106,7 +110,7 @@ export default function Sidebar() {
 
       {/* Nav */}
       <nav className="flex gap-2 overflow-x-auto px-2 py-2 md:block md:flex-1 md:overflow-y-auto md:py-4">
-        {sections.map(section => (
+        {visibleSections.map(section => (
           <div key={section.title} className="flex flex-shrink-0 gap-2 md:mb-4 md:block">
             {section.title && (
               <p className="mb-1 hidden px-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400 md:block">
@@ -144,6 +148,7 @@ export default function Sidebar() {
           <div className="min-w-0">
             <p className="text-xs font-semibold text-gray-800 truncate">{user?.name}</p>
             <p className="text-[10px] text-gray-400 truncate">{user?.email}</p>
+            <p className="text-[10px] text-brand font-medium capitalize">{user?.role === 'super_admin' ? 'Super Admin' : 'Admin'}</p>
           </div>
         </div>
 

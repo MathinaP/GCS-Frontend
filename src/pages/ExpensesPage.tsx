@@ -180,69 +180,117 @@ export default function ExpensesPage() {
         )}
       </div>
 
-      {/* Table */}
+      {/* Table + Cards */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-brand text-white">
-            <tr>
-              <th className="px-4 py-3 text-left font-medium">#</th>
-              <th className="px-4 py-3 text-left font-medium">Date</th>
-              <th className="px-4 py-3 text-left font-medium">Category</th>
-              <th className="px-4 py-3 text-left font-medium">Description</th>
-              <th className="px-4 py-3 text-right font-medium">Amount (₹)</th>
-              <th className="px-4 py-3 text-center font-medium">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading && (
-              <tr><td colSpan={6} className="text-center py-10 text-gray-400">Loading...</td></tr>
+
+        {/* Desktop table */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-brand text-white">
+              <tr>
+                <th className="px-4 py-3 text-left font-medium">#</th>
+                <th className="px-4 py-3 text-left font-medium">Date</th>
+                <th className="px-4 py-3 text-left font-medium">Category</th>
+                <th className="px-4 py-3 text-left font-medium">Description</th>
+                <th className="px-4 py-3 text-right font-medium">Amount (₹)</th>
+                <th className="px-4 py-3 text-center font-medium">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {isLoading && (
+                <tr><td colSpan={6} className="text-center py-10 text-gray-400">Loading...</td></tr>
+              )}
+              {!isLoading && expenses.length === 0 && (
+                <tr><td colSpan={6} className="text-center py-10 text-gray-400">No expenses found.</td></tr>
+              )}
+              {expenses.map((e, i) => (
+                <tr key={e.id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                  <td className="px-4 py-3 text-gray-400 text-xs">{((page - 1) * 20) + i + 1}</td>
+                  <td className="px-4 py-3 text-gray-700">{new Date(e.date).toLocaleDateString('en-IN')}</td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${CATEGORY_COLORS[e.category]}`}>
+                      {categoryLabel(e.category)}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-gray-800">
+                    {e.description}
+                    {e.notes && <p className="text-xs text-gray-400 mt-0.5">{e.notes}</p>}
+                  </td>
+                  <td className="px-4 py-3 text-right font-medium text-gray-800">
+                    {Number(e.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <button onClick={() => openEdit(e)} className="text-brand hover:text-brand-dark">
+                        <Pencil size={15} />
+                      </button>
+                      <button onClick={() => setDeleteId(e.id)} className="text-red-400 hover:text-red-600">
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            {expenses.length > 0 && (
+              <tfoot>
+                <tr className="bg-gray-50 border-t border-gray-200">
+                  <td colSpan={4} className="px-4 py-3 text-sm font-semibold text-gray-700 text-right">
+                    Page Total:
+                  </td>
+                  <td className="px-4 py-3 text-right font-bold text-gray-800">
+                    ₹ {pageTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </td>
+                  <td />
+                </tr>
+              </tfoot>
             )}
-            {!isLoading && expenses.length === 0 && (
-              <tr><td colSpan={6} className="text-center py-10 text-gray-400">No expenses found.</td></tr>
-            )}
-            {expenses.map((e, i) => (
-              <tr key={e.id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                <td className="px-4 py-3 text-gray-400 text-xs">{((page - 1) * 20) + i + 1}</td>
-                <td className="px-4 py-3 text-gray-700">{new Date(e.date).toLocaleDateString('en-IN')}</td>
-                <td className="px-4 py-3">
+          </table>
+        </div>
+
+        {/* Mobile cards */}
+        <div className="md:hidden divide-y divide-gray-100">
+          {isLoading && <div className="text-center py-10 text-gray-400 text-sm">Loading...</div>}
+          {!isLoading && expenses.length === 0 && (
+            <div className="text-center py-10 text-gray-400 text-sm">No expenses found.</div>
+          )}
+          {expenses.map((e) => (
+            <div key={e.id} className="p-4 flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap mb-1">
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${CATEGORY_COLORS[e.category]}`}>
                     {categoryLabel(e.category)}
                   </span>
-                </td>
-                <td className="px-4 py-3 text-gray-800">
-                  {e.description}
-                  {e.notes && <p className="text-xs text-gray-400 mt-0.5">{e.notes}</p>}
-                </td>
-                <td className="px-4 py-3 text-right font-medium text-gray-800">
-                  {Number(e.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                </td>
-                <td className="px-4 py-3 text-center">
-                  <div className="flex items-center justify-center gap-2">
-                    <button onClick={() => openEdit(e)} className="text-brand hover:text-brand-dark">
-                      <Pencil size={15} />
-                    </button>
-                    <button onClick={() => setDeleteId(e.id)} className="text-red-400 hover:text-red-600">
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
+                  <span className="text-xs text-gray-400">{new Date(e.date).toLocaleDateString('en-IN')}</span>
+                </div>
+                <p className="text-sm font-medium text-gray-800">{e.description}</p>
+                {e.notes && <p className="text-xs text-gray-400 mt-0.5">{e.notes}</p>}
+              </div>
+              <div className="flex-shrink-0 text-right">
+                <p className="text-sm font-bold text-gray-800">
+                  ₹{Number(e.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </p>
+                <div className="flex gap-2 mt-1 justify-end">
+                  <button onClick={() => openEdit(e)} className="text-brand hover:text-brand-dark">
+                    <Pencil size={15} />
+                  </button>
+                  <button onClick={() => setDeleteId(e.id)} className="text-red-400 hover:text-red-600">
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
           {expenses.length > 0 && (
-            <tfoot>
-              <tr className="bg-gray-50 border-t border-gray-200">
-                <td colSpan={4} className="px-4 py-3 text-sm font-semibold text-gray-700 text-right">
-                  Page Total:
-                </td>
-                <td className="px-4 py-3 text-right font-bold text-gray-800">
-                  ₹ {pageTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                </td>
-                <td />
-              </tr>
-            </tfoot>
+            <div className="px-4 py-3 bg-gray-50 flex items-center justify-between border-t border-gray-200">
+              <span className="text-sm font-semibold text-gray-700">Page Total:</span>
+              <span className="font-bold text-gray-800">
+                ₹ {pageTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              </span>
+            </div>
           )}
-        </table>
+        </div>
+
         {meta && (
           <Pagination
             page={meta.current_page}

@@ -44,6 +44,13 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+/** Redirects system_admin away from admin-only pages (expenses, profit) */
+function AdminOnlyRoute({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  if (user?.role !== 'super_admin') return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -89,9 +96,9 @@ export default function App() {
                 <Route path="service-reports" element={<ServiceReportsPage />} />
                 <Route path="service-reports/:id" element={<ServiceReportFormPage />} />
 
-                {/* Accounts */}
-                <Route path="expenses" element={<ExpensesPage />} />
-                <Route path="profit"   element={<ProfitPage />} />
+                {/* Accounts — admin only */}
+                <Route path="expenses" element={<AdminOnlyRoute><ExpensesPage /></AdminOnlyRoute>} />
+                <Route path="profit"   element={<AdminOnlyRoute><ProfitPage /></AdminOnlyRoute>} />
 
                 {/* Masters */}
                 <Route path="customers" element={<CustomersPage />} />

@@ -1,7 +1,9 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import api from '../lib/api';
 
-interface AuthUser { id: number; name: string; email: string; }
+export type UserRole = 'super_admin' | 'admin';
+
+interface AuthUser { id: number; name: string; email: string; role: UserRole; }
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -23,9 +25,9 @@ function loadStored(): { user: AuthUser | null; token: string | null } {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const stored = loadStored();
-  const [user,    setUser]  = useState<AuthUser | null>(stored.user);
-  const [token,   setToken] = useState<string | null>(stored.token);
-  const [loading, setLoading] = useState(!!stored.token); // only verify if we have a token
+  const [user,    setUser]    = useState<AuthUser | null>(stored.user);
+  const [token,   setToken]   = useState<string | null>(stored.token);
+  const [loading, setLoading] = useState(!!stored.token);
 
   useEffect(() => {
     if (!stored.token) return;
@@ -35,12 +37,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(r.data);
         localStorage.setItem('gcs_user', JSON.stringify(r.data));
       })
-      .catch(() => {
-        localStorage.removeItem('gcs_token');
-        localStorage.removeItem('gcs_user');
-        delete api.defaults.headers.common['Authorization'];
-        setUser(null);
-        setToken(null);
+      .catch((err) => {
+        // Only log out if the token is explicitly rejected (401).
+        // Network errors or server errors (cold start) keep the session alive.
+        if (err?.response?.status === 401) {
+          localStorage.removeItem('gcs_token');
+          localStorage.removeItem('gcs_user');
+          delete api.defaults.headers.common['Authorization'];
+          setUser(null);
+          setToken(null);
+        }
       })
       .finally(() => setLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
