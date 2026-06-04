@@ -73,9 +73,17 @@ export default function Sidebar() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [loggingOut,  setLoggingOut]  = useState(false);
 
-  const visibleSections = sections.filter(s =>
-    !(s.title === 'ACCOUNTS' && user?.role !== 'super_admin')
-  );
+  const visibleSections = sections.map(section => {
+    if (section.title === 'ACCOUNTS') {
+      return {
+        ...section,
+        items: section.items.filter(item =>
+          !(item.to === '/profit' && user?.role !== 'super_admin')
+        ),
+      };
+    }
+    return section;
+  }).filter(section => section.items.length > 0);
 
   async function handleLogout() {
     setLoggingOut(true);

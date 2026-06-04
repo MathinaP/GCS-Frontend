@@ -96,8 +96,8 @@ export default function App() {
                 <Route path="service-reports" element={<ServiceReportsPage />} />
                 <Route path="service-reports/:id" element={<ServiceReportFormPage />} />
 
-                {/* Accounts — admin only */}
-                <Route path="expenses" element={<AdminOnlyRoute><ExpensesPage /></AdminOnlyRoute>} />
+                {/* Accounts */}
+                <Route path="expenses" element={<ExpensesPage />} />
                 <Route path="profit"   element={<AdminOnlyRoute><ProfitPage /></AdminOnlyRoute>} />
 
                 {/* Masters */}
